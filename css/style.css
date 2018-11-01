@@ -5,7 +5,7 @@ html {
   font-size: 14px;
 }
 body {
-  font-family: "open sans", "Helvetica Neue", "Microsoft Yahei", Helvetica, Arial, sans-serif;
+  font-family: Helvetica, Tahoma, Arial, "Heiti SC", "Microsoft YaHei", "WenQuanYi Micro Hei";
   background-color: #f7f7f7;
 }
 @media screen and (min-width: 1280px) {
@@ -299,7 +299,7 @@ img.thumbnail {
 .content code,
 .content pre {
   font-size: 0.85em;
-  font-family: "open sans", "Helvetica Neue", "Microsoft Yahei", Helvetica, Arial, sans-serif;
+  font-family: "Source Code Pro", monospace, "Microsoft YaHei";
 }
 .content code {
   color: #ff3860;
@@ -344,7 +344,7 @@ figure.highlight figcaption {
 }
 figure.highlight figcaption span {
   font-weight: 500;
-  font-family: "open sans", "Helvetica Neue", "Microsoft Yahei", Helvetica, Arial, sans-serif;
+  font-family: "Source Code Pro", monospace, "Microsoft YaHei";
 }
 figure.highlight figcaption a {
   float: right;
