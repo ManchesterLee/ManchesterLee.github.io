@@ -1,1 +1,1 @@
-{"pages":[],"posts":[],"tags":[],"categories":[]}
+{"pages":[],"posts":[{"title":"设计模式-责任链","text":"责任链设计模式是一种行为模式，其中一组对象按顺序连接在一起，请求在对象链上传递，直到有一个对象处理该请求为止，避免将请求的发送者与接收者耦合在一起。","link":"/2018/10/31/设计模式-责任链/"}],"tags":[{"name":"设计模式","slug":"设计模式","link":"/tags/设计模式/"},{"name":"Java","slug":"Java","link":"/tags/Java/"},{"name":"责任链","slug":"责任链","link":"/tags/责任链/"}],"categories":[{"name":"设计模式","slug":"设计模式","link":"/categories/设计模式/"}]}
