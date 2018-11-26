@@ -15,12 +15,12 @@
 <meta property="og:site_name" content="ManchesterLee">
 <meta property="og:description" content="责任链设计模式是一种行为模式，其中一组对象按顺序连接在一起，请求在对象链上传递，直到有一个对象处理该请求，返回一个响应对象。否则该请求将继续往下传递。">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:image" content="https://manchesterlee.github.io/images/post/chain_of_responsibility.png">
-<meta property="og:updated_time" content="2018-11-02T04:37:58.799Z">
+<meta property="og:image" content="http://piqx1bsi4.bkt.clouddn.com/image/chain_of_responsibility.png">
+<meta property="og:updated_time" content="2018-11-26T10:10:03.782Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="设计模式-责任链">
 <meta name="twitter:description" content="责任链设计模式是一种行为模式，其中一组对象按顺序连接在一起，请求在对象链上传递，直到有一个对象处理该请求，返回一个响应对象。否则该请求将继续往下传递。">
-<meta name="twitter:image" content="https://manchesterlee.github.io/images/post/chain_of_responsibility.png">
+<meta name="twitter:image" content="http://piqx1bsi4.bkt.clouddn.com/image/chain_of_responsibility.png">
 
 
 
@@ -150,7 +150,7 @@ var _hmt = _hmt || [];
                 <span class="level-item has-text-grey">
                     
                     
-                    5 分钟 读完 (大约 683 个字)
+                    5 分钟 读完 (大约 688 个字)
                 </span>
                 
             </div>
@@ -166,7 +166,7 @@ var _hmt = _hmt || [];
 <a id="more"></a>
 <h2 id="什么是责任链模式"><a href="#什么是责任链模式" class="headerlink" title="什么是责任链模式"></a>什么是责任链模式</h2><p>为了更好的理解该责任链模式，举一个现实生活中的例子。假设你手中有一个难题，首先你会尝试自己去解决，如果自己无法解决，你会告诉你的一个朋友请求他解决，如果他也无法解决，则他会将该问题传递给下一个朋友去解决，直到有一个人解决了该难题，或者没有人解决。</p>
 <p>责任链模式的意图是避免将请求的发送者和接收者耦合在一起，让每一个接收者都有机会处理该请求。将接收者按顺序连接在一起，并将请求在这条链上往下传递，直到有一个对象处理了该请求。</p>
-<p><img src="/images/post/chain_of_responsibility.png" alt="Chain Of Responsibility"></p>
+<p><img src="http://piqx1bsi4.bkt.clouddn.com/image/chain_of_responsibility.png" alt="Chain Of Responsibility"></p>
 <h5 id="Handler"><a href="#Handler" class="headerlink" title="Handler"></a>Handler</h5><p>处理请求的接口</p>
 <h5 id="ConcreteHandler"><a href="#ConcreteHandler" class="headerlink" title="ConcreteHandler"></a>ConcreteHandler</h5><p>处理请求的对象</p>
 <h5 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h5><p>初始化请求并将请求传递到Handler对象链</p>
@@ -178,7 +178,7 @@ var _hmt = _hmt || [];
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ImageFileHandler</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Handler</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> Handler handler;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ImageFileHandler</span><span class="hljs-params">(Handler handler)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">this</span>.handler = handler;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">process</span><span class="hljs-params">(File file)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (<span class="hljs-string">"image"</span>.equals(file.getType())) &#123;</span><br><span class="line">            System.out.println(file.getName() + <span class="hljs-string">" was handled by "</span> + name());</span><br><span class="line">        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (handler != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">            handler.process(file);</span><br><span class="line">        &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">            System.out.println(file.getName() + <span class="hljs-string">" is not supported"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">name</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"imageFileHandler"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><code>File</code>表示被处理的请求</p>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">File</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function">String <span class="hljs-title">getName</span><span class="hljs-params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function">String <span class="hljs-title">getType</span><span class="hljs-params">()</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-comment">// 图像文件</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ImageFile</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">File</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getName</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"imageFile"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getType</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"image"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-comment">// 文本文件</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TextFile</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">File</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getName</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"textFile"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getType</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"text"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Client</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ImageFileHandler imageFileHandler = <span class="hljs-keyword">new</span> ImageFileHandler(<span class="hljs-keyword">null</span>);</span><br><span class="line">        TextFileHandler textFileHandler = <span class="hljs-keyword">new</span> TextFileHandler(imageFileHandler);</span><br><span class="line"></span><br><span class="line">        TextFile textFile = <span class="hljs-keyword">new</span> TextFile();</span><br><span class="line">        ImageFile imageFile = <span class="hljs-keyword">new</span> ImageFile();</span><br><span class="line"></span><br><span class="line">        textFileHandler.process(textFile);</span><br><span class="line">        textFileHandler.process(imageFile);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Client</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ImageFileHandler imageFileHandler = <span class="hljs-keyword">new</span> ImageFileHandler(<span class="hljs-keyword">null</span>);</span><br><span class="line">        TextFileHandler textFileHandler = <span class="hljs-keyword">new</span> TextFileHandler(imageFileHandler);</span><br><span class="line"></span><br><span class="line">        TextFile textFile = <span class="hljs-keyword">new</span> TextFile();</span><br><span class="line">        ImageFile imageFile = <span class="hljs-keyword">new</span> ImageFile();</span><br><span class="line"></span><br><span class="line">        textFileHandler.process(textFile);</span><br><span class="line">        textFileHandler.process(imageFile);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>测试程序输出内容</p>
 <blockquote>
 <p>textFile was handled by textFileHandler</p>
@@ -371,7 +371,7 @@ var _hmt = _hmt || [];
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-11-25T05:05:15.000Z">2018-11-25</time></div>
                     <a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/" class="has-link-black-ter is-size-6">Spring Boot源码分析-配置文件加载原理</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot源码分析/">Spring Boot源码分析</a>
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                     </p>
                 </div>
             </div>
@@ -424,9 +424,9 @@ var _hmt = _hmt || [];
                 <span class="level-item tag">1</span>
             </span>
         </a></li><li>
-        <a class="level is-marginless" href="/categories/Spring-Boot源码分析/">
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
             <span class="level-start">
-                <span class="level-item">Spring Boot源码分析</span>
+                <span class="level-item">Spring Boot</span>
             </span>
             <span class="level-end">
                 <span class="level-item tag">1</span>
@@ -514,7 +514,7 @@ var _hmt = _hmt || [];
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-11-25T05:05:15.000Z">2018-11-25</time></div>
                     <a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/" class="has-link-black-ter is-size-6">Spring Boot源码分析-配置文件加载原理</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot源码分析/">Spring Boot源码分析</a>
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                     </p>
                 </div>
             </div>
@@ -567,9 +567,9 @@ var _hmt = _hmt || [];
                 <span class="level-item tag">1</span>
             </span>
         </a></li><li>
-        <a class="level is-marginless" href="/categories/Spring-Boot源码分析/">
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
             <span class="level-start">
-                <span class="level-item">Spring Boot源码分析</span>
+                <span class="level-item">Spring Boot</span>
             </span>
             <span class="level-end">
                 <span class="level-item tag">1</span>
