@@ -1,13 +1,24 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang=zh>
 <head><meta name="generator" content="Hexo 3.8.0">
-    <meta charset="utf-8">
-<title>Spring Boot源码分析-配置文件加载原理 - ManchesterLee</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-
-
-
-    <meta name="description" content="Spring Boot框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在application.properties或application.yml中，本文就让我们一起来探讨一下Spring Boot如何加载配置文件中的内容。">
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000">
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top">
+  
+  
+  <title>Spring Boot源码分析-配置文件加载原理 | Lee</title>
+  <meta name="description" content="Spring Boot框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在application.properties或application.yml中，本文就让我们一起来探讨一下Spring Boot如何加载配置文件中的内容。">
 <meta name="keywords" content="Java,Spring Boot">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spring Boot源码分析-配置文件加载原理">
@@ -19,148 +30,300 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spring Boot源码分析-配置文件加载原理">
 <meta name="twitter:description" content="Spring Boot框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在application.properties或application.yml中，本文就让我们一起来探讨一下Spring Boot如何加载配置文件中的内容。">
-
-
-
-
-
-<link rel="icon" href="/images/favicon.svg">
-
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
-<link rel="stylesheet" href="/css/style.css">
-
-
-    
-    
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
-    
-
-    
-    
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
-    
-
-    
-    
-    
-    <style>body{opacity: 0}</style>
-    
-
-    
-    
-    
-    
-
-
-    
-    
-
-    
-    
-<script>
-var _hmt = _hmt || [];
-(function() {
-    var hm = document.createElement("script");
-    hm.src = "//hm.baidu.com/hm.js?f5a937318bf5d6f9750d51a9ef199661";
-    var s = document.getElementsByTagName("script")[0];
-    s.parentNode.insertBefore(hm, s);
-})();
-</script>
-
-    
-    
-
-    
-
-
+  <!-- Canonical links -->
+  <link rel="canonical" href="https://manchesterlee.github.io/2018/11/25/SpringBoot源码分析-配置文件加载原理/index.html">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  
+  
+  
 </head>
-<body class="is-3-column">
-    <nav class="navbar navbar-main">
-    <div class="container">
-        <div class="navbar-brand is-flex-center">
-            <a class="navbar-item navbar-logo" href="/">
-            
-                <img src="/images/logo.svg" alt="" height="28">
-            
-            </a>
+
+
+<body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/ManchesterLee" target="_blank">
+          <img class="img-circle img-rotate" src="/images/profile.png" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">ManchesterLee</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">Java Developer</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> Hefei, China</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
+
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="搜索">
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
         </div>
-        <div class="navbar-menu">
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="想要查找什么..." x-webkit-speech="">
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope="" itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
             
-            <div class="navbar-start">
-                
-                <a class="navbar-item" href="/">首页</a>
-                
-                <a class="navbar-item" href="/archives">归档</a>
-                
-                <a class="navbar-item" href="/categories">类别</a>
-                
-                <a class="navbar-item" href="/tags">标签</a>
-                
-                <a class="navbar-item" href="/about">关于</a>
-                
-            </div>
+            <i class="icon icon-home-fill"></i>
             
-            <div class="navbar-end">
-                
-                    
-                    
-                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
-                        
-                        <i class="fab fa-github"></i>
-                        
-                    </a>
-                    
-                
-                
-                <a class="navbar-item search" title="搜索" href="javascript:;">
-                    <i class="material-icons is-size-5">search</i>
-                </a>
-                
+            <span class="menu-title">首页</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">归档</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">分类</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">标签</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">项目</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/ManchesterLee" target="_blank" title="Github" data-toggle="tooltip" data-placement="top"><i class="icon icon-github"></i></a></li>
+        
+    </ul>
+
+    </nav>
+  </div>
+</header>
+
+  
+    <aside class="sidebar" itemscope="" itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">公告</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>致力于Java后端开发!</p>
             </div>
         </div>
     </div>
-</nav>
+</div>
+
     
-    <section class="section">
-        <div class="container">
-            <div class="columns main">
-                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2"><div class="card">
+      
+  <div class="widget">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget-body">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Maven/">Maven</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Spring-Boot/">Spring Boot</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/设计模式/">设计模式</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
     
-    <div class="card-content article ">
+      
+  <div class="widget">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget-body">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Maven/">Maven</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spring-Boot/">Spring Boot</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/设计模式/">设计模式</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/Java/" style="font-size: 14px;">Java</a> <a href="/tags/Maven/" style="font-size: 13px;">Maven</a> <a href="/tags/Spring-Boot/" style="font-size: 13.5px;">Spring Boot</a> <a href="/tags/设计模式/" style="font-size: 13px;">设计模式</a>
+    </div>
+  </div>
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/11/">十一月 2018</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/10/">十月 2018</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
         
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2018-11-25T05:05:15.000Z">2018-11-25</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    18 分钟 读完 (大约 2641 个字)
-                </span>
-                
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/Spring-Boot/">Spring Boot</a>
+              </p>
+              <p class="item-title">
+                <a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/" class="title">Spring Boot源码分析-配置文件加载原理</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2018-11-25T05:05:15.000Z" itemprop="datePublished">2018-11-25</time>
+              </p>
             </div>
-        </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/Maven/">Maven</a>
+              </p>
+              <p class="item-title">
+                <a href="/2018/11/24/Maven多模块-SpringBoot项目/" class="title">Maven多模块-Spring Boot项目</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2018-11-24T07:40:26.000Z" itemprop="datePublished">2018-11-24</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                <a class="category-link" href="/categories/设计模式/">设计模式</a>
+              </p>
+              <p class="item-title">
+                <a href="/2018/10/31/设计模式-责任链/" class="title">设计模式-责任链</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2018-10-31T14:48:21.000Z" itemprop="datePublished">2018-10-31</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-SpringBoot源码分析-配置文件加载原理" class="article article-type-post" itemscope="" itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                Spring Boot源码分析-配置文件加载原理
-            
-        </h1>
-        <div class="content">
-            <p><code>Spring Boot</code>框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在<code>application.properties</code>或<code>application.yml</code>中，本文就让我们一起来探讨一下<code>Spring Boot</code>如何加载配置文件中的内容。</p>
+  
+    <h1 class="article-title" itemprop="name">
+      Spring Boot源码分析-配置文件加载原理
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/" class="article-date">
+	  <time datetime="2018-11-25T05:05:15.000Z" itemprop="datePublished">2018-11-25</time>
+	</a>
+</span>
+        
+  <span class="article-category">
+    <i class="icon icon-folder"></i>
+    <a class="article-category-link" href="/categories/Spring-Boot/">Spring Boot</a>
+  </span>
+
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link" href="/tags/Java/">Java</a>, <a class="article-tag-link" href="/tags/Spring-Boot/">Spring Boot</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/#comments" class="article-comment-link">评论</a></span>
+        
+	
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">字数统计: 2.7k(字)</span>
+	
+	
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">阅读时长: 12(分)</span>
+	
+
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p><code>Spring Boot</code>框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在<code>application.properties</code>或<code>application.yml</code>中，本文就让我们一起来探讨一下<code>Spring Boot</code>如何加载配置文件中的内容。</p>
 <a id="more"></a>
 <p>本文针对有一定<code>Spring Boot</code>使用基础的同学，才能更好地理解后面叙述的内容。</p>
 <blockquote>
@@ -184,735 +347,194 @@ var _hmt = _hmt || [];
 </ol>
 <hr>
 <p>接下来，进入正题通过源码分析理解<code>Spring Boot</code>加载配置文件内容的过程（部分方法内容没有贴出，可以根据源码一步一步跟踪下去）。</p>
-<p>所有的<code>Spring Boot</code>项目都是由<code>SpringApplication.run()</code>这个静态方法开始执行的，源码分析也从这里开始进行。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> ConfigurableApplicationContext <span class="hljs-title">run</span><span class="hljs-params">(Object source, String... args)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> run(<span class="hljs-keyword">new</span> Object[] &#123; source &#125;, args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>run()</code>方法内部实际上构造了一个<code>SpringApplication</code>对象并执行对象的<code>run()</code>方法（非静态方法）<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> ConfigurableApplicationContext <span class="hljs-title">run</span><span class="hljs-params">(Object[] sources, String[] args)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SpringApplication(sources).run(args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>可以看到构造方法里面执行了<code>initialize()</code>方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initialize</span><span class="hljs-params">(Object[] sources)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (sources != <span class="hljs-keyword">null</span> &amp;&amp; sources.length &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.sources.addAll(Arrays.asList(sources));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// 判断当前是否是web环境</span></span><br><span class="line">	<span class="hljs-keyword">this</span>.webEnvironment = deduceWebEnvironment();</span><br><span class="line">	<span class="hljs-comment">// 初始化ApplicationContextInitializer对象</span></span><br><span class="line">	setInitializers((Collection) getSpringFactoriesInstances(</span><br><span class="line">			ApplicationContextInitializer.class));</span><br><span class="line">	<span class="hljs-comment">// 初始化ApplicationListener对象</span></span><br><span class="line">	setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));</span><br><span class="line">	<span class="hljs-keyword">this</span>.mainApplicationClass = deduceMainApplicationClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>这里可以看到是通过<code>getSpringFactoriesInstances()</code>初始化相关对象，进入方法内部<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">private</span> &lt;T&gt; Collection&lt;? extends T&gt; getSpringFactoriesInstances(Class&lt;T&gt; type,</span><br><span class="line">		Class&lt;?&gt;[] parameterTypes, Object... args) &#123;</span><br><span class="line">	ClassLoader classLoader = Thread.currentThread().getContextClassLoader();</span><br><span class="line">	<span class="hljs-comment">// 加载类名称</span></span><br><span class="line">	Set&lt;String&gt; names = <span class="hljs-keyword">new</span> LinkedHashSet&lt;String&gt;(</span><br><span class="line">			SpringFactoriesLoader.loadFactoryNames(type, classLoader));</span><br><span class="line">	<span class="hljs-comment">// 创建对象</span></span><br><span class="line">	List&lt;T&gt; instances = createSpringFactoriesInstances(type, parameterTypes,</span><br><span class="line">			classLoader, args, names);</span><br><span class="line">	AnnotationAwareOrderComparator.sort(instances);</span><br><span class="line">	<span class="hljs-keyword">return</span> instances;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>进入<code>SpringFactoriesLoader.loadFactoryNames()</code>方法，看加载哪些类<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String FACTORIES_RESOURCE_LOCATION = <span class="hljs-string">"META-INF/spring.factories"</span>;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> List&lt;String&gt; <span class="hljs-title">loadFactoryNames</span><span class="hljs-params">(Class&lt;?&gt; factoryClass, ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">	String factoryClassName = factoryClass.getName();</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		Enumeration&lt;URL&gt; urls = (classLoader != <span class="hljs-keyword">null</span> ? classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :</span><br><span class="line">				ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));</span><br><span class="line">		List&lt;String&gt; result = <span class="hljs-keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">		<span class="hljs-keyword">while</span> (urls.hasMoreElements()) &#123;</span><br><span class="line">			URL url = urls.nextElement();</span><br><span class="line">			Properties properties = PropertiesLoaderUtils.loadProperties(<span class="hljs-keyword">new</span> UrlResource(url));</span><br><span class="line">			String factoryClassNames = properties.getProperty(factoryClassName);</span><br><span class="line">			result.addAll(Arrays.asList(StringUtils.commaDelimitedListToStringArray(factoryClassNames)));</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> result;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">"Unable to load ["</span> + factoryClass.getName() +</span><br><span class="line">				<span class="hljs-string">"] factories from location ["</span> + FACTORIES_RESOURCE_LOCATION + <span class="hljs-string">"]"</span>, ex);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>所有的<code>Spring Boot</code>项目都是由<code>SpringApplication.run()</code>这个静态方法开始执行的，源码分析也从这里开始进行。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(Object source, String... args)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> run(<span class="keyword">new</span> Object[] &#123; source &#125;, args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>run()</code>方法内部实际上构造了一个<code>SpringApplication</code>对象并执行对象的<code>run()</code>方法（非静态方法）<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(Object[] sources, String[] args)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">new</span> SpringApplication(sources).run(args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以看到构造方法里面执行了<code>initialize()</code>方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">initialize</span><span class="params">(Object[] sources)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (sources != <span class="keyword">null</span> &amp;&amp; sources.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="keyword">this</span>.sources.addAll(Arrays.asList(sources));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 判断当前是否是web环境</span></span><br><span class="line">	<span class="keyword">this</span>.webEnvironment = deduceWebEnvironment();</span><br><span class="line">	<span class="comment">// 初始化ApplicationContextInitializer对象</span></span><br><span class="line">	setInitializers((Collection) getSpringFactoriesInstances(</span><br><span class="line">			ApplicationContextInitializer.class));</span><br><span class="line">	<span class="comment">// 初始化ApplicationListener对象</span></span><br><span class="line">	setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));</span><br><span class="line">	<span class="keyword">this</span>.mainApplicationClass = deduceMainApplicationClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里可以看到是通过<code>getSpringFactoriesInstances()</code>初始化相关对象，进入方法内部<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> &lt;T&gt; Collection&lt;? extends T&gt; getSpringFactoriesInstances(Class&lt;T&gt; type,</span><br><span class="line">		Class&lt;?&gt;[] parameterTypes, Object... args) &#123;</span><br><span class="line">	ClassLoader classLoader = Thread.currentThread().getContextClassLoader();</span><br><span class="line">	<span class="comment">// 加载类名称</span></span><br><span class="line">	Set&lt;String&gt; names = <span class="keyword">new</span> LinkedHashSet&lt;String&gt;(</span><br><span class="line">			SpringFactoriesLoader.loadFactoryNames(type, classLoader));</span><br><span class="line">	<span class="comment">// 创建对象</span></span><br><span class="line">	List&lt;T&gt; instances = createSpringFactoriesInstances(type, parameterTypes,</span><br><span class="line">			classLoader, args, names);</span><br><span class="line">	AnnotationAwareOrderComparator.sort(instances);</span><br><span class="line">	<span class="keyword">return</span> instances;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>进入<code>SpringFactoriesLoader.loadFactoryNames()</code>方法，看加载哪些类<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String FACTORIES_RESOURCE_LOCATION = <span class="string">"META-INF/spring.factories"</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> List&lt;String&gt; <span class="title">loadFactoryNames</span><span class="params">(Class&lt;?&gt; factoryClass, ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">	String factoryClassName = factoryClass.getName();</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		Enumeration&lt;URL&gt; urls = (classLoader != <span class="keyword">null</span> ? classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :</span><br><span class="line">				ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));</span><br><span class="line">		List&lt;String&gt; result = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">		<span class="keyword">while</span> (urls.hasMoreElements()) &#123;</span><br><span class="line">			URL url = urls.nextElement();</span><br><span class="line">			Properties properties = PropertiesLoaderUtils.loadProperties(<span class="keyword">new</span> UrlResource(url));</span><br><span class="line">			String factoryClassNames = properties.getProperty(factoryClassName);</span><br><span class="line">			result.addAll(Arrays.asList(StringUtils.commaDelimitedListToStringArray(factoryClassNames)));</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> result;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Unable to load ["</span> + factoryClass.getName() +</span><br><span class="line">				<span class="string">"] factories from location ["</span> + FACTORIES_RESOURCE_LOCATION + <span class="string">"]"</span>, ex);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>可以看到实际上是加载<code>META-INF/spring.factories</code>文件夹下的内容，读取到的内容放在<code>Properties</code>中，通过类的名称去获取对应的值。值就是实现类的名称，然后再调用<code>createSpringFactoriesInstances</code>创建相关类的实例，这样就完成了对<code>ApplicationContextInitializer</code>对象的实例化工作。同理<code>ApplicationListener</code>。</p>
 <p>那么<code>META-INF/spring.factories</code>这个文件放在哪里呢，我们的项目下一般是不存在这个文件的。</p>
-<p>实际上这个文件存在于<code>Spring Boot</code>项目中，这里就体现了<code>Spring Boot</code>的默认配置，文件内容如下：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"># PropertySource Loaders</span><br><span class="line">org.springframework.boot.env.PropertySourceLoader=\</span><br><span class="line">org.springframework.boot.env.PropertiesPropertySourceLoader,\</span><br><span class="line">org.springframework.boot.env.YamlPropertySourceLoader</span><br><span class="line"></span><br><span class="line"># Run Listeners</span><br><span class="line">org.springframework.boot.SpringApplicationRunListener=\</span><br><span class="line">org.springframework.boot.context.event.EventPublishingRunListener</span><br><span class="line"></span><br><span class="line"># Application Context Initializers</span><br><span class="line">org.springframework.context.ApplicationContextInitializer=\</span><br><span class="line">org.springframework.boot.context.ConfigurationWarningsApplicationContextInitializer,\</span><br><span class="line">org.springframework.boot.context.ContextIdApplicationContextInitializer,\</span><br><span class="line">org.springframework.boot.context.config.DelegatingApplicationContextInitializer,\</span><br><span class="line">org.springframework.boot.context.embedded.ServerPortInfoApplicationContextInitializer</span><br><span class="line"></span><br><span class="line"># Application Listeners</span><br><span class="line">org.springframework.context.ApplicationListener=\</span><br><span class="line">org.springframework.boot.ClearCachesApplicationListener,\</span><br><span class="line">org.springframework.boot.builder.ParentContextCloserApplicationListener,\</span><br><span class="line">org.springframework.boot.context.FileEncodingApplicationListener,\</span><br><span class="line">org.springframework.boot.context.config.AnsiOutputApplicationListener,\</span><br><span class="line">org.springframework.boot.context.config.ConfigFileApplicationListener,\</span><br><span class="line">org.springframework.boot.context.config.DelegatingApplicationListener,\</span><br><span class="line">org.springframework.boot.liquibase.LiquibaseServiceLocatorApplicationListener,\</span><br><span class="line">org.springframework.boot.logging.ClasspathLoggingApplicationListener,\</span><br><span class="line">org.springframework.boot.logging.LoggingApplicationListener</span><br><span class="line"></span><br><span class="line"># Environment Post Processors</span><br><span class="line">org.springframework.boot.env.EnvironmentPostProcessor=\</span><br><span class="line">org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor,\</span><br><span class="line">org.springframework.boot.env.SpringApplicationJsonEnvironmentPostProcessor</span><br><span class="line"></span><br><span class="line"># Failure Analyzers</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalyzer=\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BeanCurrentlyInCreationFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BeanNotOfRequiredTypeFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BindFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.ConnectorStartFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.NoSuchMethodFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.PortInUseFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.ValidationExceptionFailureAnalyzer</span><br><span class="line"></span><br><span class="line"># FailureAnalysisReporters</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalysisReporter=\</span><br><span class="line">org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter</span><br></pre></td></tr></table></figure></p>
-<p>接下来，继续看<code>run()</code>方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> ConfigurableApplicationContext <span class="hljs-title">run</span><span class="hljs-params">(String... args)</span> </span>&#123;</span><br><span class="line">	StopWatch stopWatch = <span class="hljs-keyword">new</span> StopWatch();</span><br><span class="line">	stopWatch.start();</span><br><span class="line">	ConfigurableApplicationContext context = <span class="hljs-keyword">null</span>;</span><br><span class="line">	FailureAnalyzers analyzers = <span class="hljs-keyword">null</span>;</span><br><span class="line">	configureHeadlessProperty();</span><br><span class="line">	<span class="hljs-comment">// 实例化SpringApplicationRunListener对象</span></span><br><span class="line">	SpringApplicationRunListeners listeners = getRunListeners(args);</span><br><span class="line">	<span class="hljs-comment">// 广播ApplicationStartedEvent事件</span></span><br><span class="line">	listeners.starting();</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		ApplicationArguments applicationArguments = <span class="hljs-keyword">new</span> DefaultApplicationArguments(</span><br><span class="line">				args);</span><br><span class="line">		ConfigurableEnvironment environment = prepareEnvironment(listeners,</span><br><span class="line">				applicationArguments);</span><br><span class="line">		Banner printedBanner = printBanner(environment);</span><br><span class="line">		context = createApplicationContext();</span><br><span class="line">		analyzers = <span class="hljs-keyword">new</span> FailureAnalyzers(context);</span><br><span class="line">		prepareContext(context, environment, listeners, applicationArguments,</span><br><span class="line">				printedBanner);</span><br><span class="line">		refreshContext(context);</span><br><span class="line">		afterRefresh(context, applicationArguments);</span><br><span class="line">		listeners.finished(context, <span class="hljs-keyword">null</span>);</span><br><span class="line">		stopWatch.stop();</span><br><span class="line">		<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.logStartupInfo) &#123;</span><br><span class="line">			<span class="hljs-keyword">new</span> StartupInfoLogger(<span class="hljs-keyword">this</span>.mainApplicationClass)</span><br><span class="line">					.logStarted(getApplicationLog(), stopWatch);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> context;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		handleRunFailure(context, listeners, analyzers, ex);</span><br><span class="line">		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(ex);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>这里需要关注<code>getRunListeners()</code>这个方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> SpringApplicationRunListeners <span class="hljs-title">getRunListeners</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">	Class&lt;?&gt;[] types = <span class="hljs-keyword">new</span> Class&lt;?&gt;[] &#123; SpringApplication.class, String[].class &#125;;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SpringApplicationRunListeners(logger, getSpringFactoriesInstances(</span><br><span class="line">			SpringApplicationRunListener.class, types, <span class="hljs-keyword">this</span>, args));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>根据前面分析的代码可以看出，这里构造了<code>SpringApplicationRunListener</code>对象，对应的实现类即是<code>EventPublishingRunListener</code>，这个对象提供了广播<code>Spring</code>事件的能力。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># Run Listeners</span><br><span class="line">org.springframework.boot.SpringApplicationRunListener=\</span><br><span class="line">org.springframework.boot.context.event.EventPublishingRunListener</span><br></pre></td></tr></table></figure></p>
+<p>实际上这个文件存在于<code>Spring Boot</code>项目中，这里就体现了<code>Spring Boot</code>的默认配置，文件内容如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"># PropertySource Loaders</span><br><span class="line">org.springframework.boot.env.PropertySourceLoader=\</span><br><span class="line">org.springframework.boot.env.PropertiesPropertySourceLoader,\</span><br><span class="line">org.springframework.boot.env.YamlPropertySourceLoader</span><br><span class="line"></span><br><span class="line"># Run Listeners</span><br><span class="line">org.springframework.boot.SpringApplicationRunListener=\</span><br><span class="line">org.springframework.boot.context.event.EventPublishingRunListener</span><br><span class="line"></span><br><span class="line"># Application Context Initializers</span><br><span class="line">org.springframework.context.ApplicationContextInitializer=\</span><br><span class="line">org.springframework.boot.context.ConfigurationWarningsApplicationContextInitializer,\</span><br><span class="line">org.springframework.boot.context.ContextIdApplicationContextInitializer,\</span><br><span class="line">org.springframework.boot.context.config.DelegatingApplicationContextInitializer,\</span><br><span class="line">org.springframework.boot.context.embedded.ServerPortInfoApplicationContextInitializer</span><br><span class="line"></span><br><span class="line"># Application Listeners</span><br><span class="line">org.springframework.context.ApplicationListener=\</span><br><span class="line">org.springframework.boot.ClearCachesApplicationListener,\</span><br><span class="line">org.springframework.boot.builder.ParentContextCloserApplicationListener,\</span><br><span class="line">org.springframework.boot.context.FileEncodingApplicationListener,\</span><br><span class="line">org.springframework.boot.context.config.AnsiOutputApplicationListener,\</span><br><span class="line">org.springframework.boot.context.config.ConfigFileApplicationListener,\</span><br><span class="line">org.springframework.boot.context.config.DelegatingApplicationListener,\</span><br><span class="line">org.springframework.boot.liquibase.LiquibaseServiceLocatorApplicationListener,\</span><br><span class="line">org.springframework.boot.logging.ClasspathLoggingApplicationListener,\</span><br><span class="line">org.springframework.boot.logging.LoggingApplicationListener</span><br><span class="line"></span><br><span class="line"># Environment Post Processors</span><br><span class="line">org.springframework.boot.env.EnvironmentPostProcessor=\</span><br><span class="line">org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor,\</span><br><span class="line">org.springframework.boot.env.SpringApplicationJsonEnvironmentPostProcessor</span><br><span class="line"></span><br><span class="line"># Failure Analyzers</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalyzer=\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BeanCurrentlyInCreationFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BeanNotOfRequiredTypeFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.BindFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.ConnectorStartFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.NoSuchMethodFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.PortInUseFailureAnalyzer,\</span><br><span class="line">org.springframework.boot.diagnostics.analyzer.ValidationExceptionFailureAnalyzer</span><br><span class="line"></span><br><span class="line"># FailureAnalysisReporters</span><br><span class="line">org.springframework.boot.diagnostics.FailureAnalysisReporter=\</span><br><span class="line">org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter</span><br></pre></td></tr></table></figure></p>
+<p>接下来，继续看<code>run()</code>方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(String... args)</span> </span>&#123;</span><br><span class="line">	StopWatch stopWatch = <span class="keyword">new</span> StopWatch();</span><br><span class="line">	stopWatch.start();</span><br><span class="line">	ConfigurableApplicationContext context = <span class="keyword">null</span>;</span><br><span class="line">	FailureAnalyzers analyzers = <span class="keyword">null</span>;</span><br><span class="line">	configureHeadlessProperty();</span><br><span class="line">	<span class="comment">// 实例化SpringApplicationRunListener对象</span></span><br><span class="line">	SpringApplicationRunListeners listeners = getRunListeners(args);</span><br><span class="line">	<span class="comment">// 广播ApplicationStartedEvent事件</span></span><br><span class="line">	listeners.starting();</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		ApplicationArguments applicationArguments = <span class="keyword">new</span> DefaultApplicationArguments(</span><br><span class="line">				args);</span><br><span class="line">		ConfigurableEnvironment environment = prepareEnvironment(listeners,</span><br><span class="line">				applicationArguments);</span><br><span class="line">		Banner printedBanner = printBanner(environment);</span><br><span class="line">		context = createApplicationContext();</span><br><span class="line">		analyzers = <span class="keyword">new</span> FailureAnalyzers(context);</span><br><span class="line">		prepareContext(context, environment, listeners, applicationArguments,</span><br><span class="line">				printedBanner);</span><br><span class="line">		refreshContext(context);</span><br><span class="line">		afterRefresh(context, applicationArguments);</span><br><span class="line">		listeners.finished(context, <span class="keyword">null</span>);</span><br><span class="line">		stopWatch.stop();</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.logStartupInfo) &#123;</span><br><span class="line">			<span class="keyword">new</span> StartupInfoLogger(<span class="keyword">this</span>.mainApplicationClass)</span><br><span class="line">					.logStarted(getApplicationLog(), stopWatch);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> context;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		handleRunFailure(context, listeners, analyzers, ex);</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(ex);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里需要关注<code>getRunListeners()</code>这个方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> SpringApplicationRunListeners <span class="title">getRunListeners</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">	Class&lt;?&gt;[] types = <span class="keyword">new</span> Class&lt;?&gt;[] &#123; SpringApplication.class, String[].class &#125;;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">new</span> SpringApplicationRunListeners(logger, getSpringFactoriesInstances(</span><br><span class="line">			SpringApplicationRunListener.class, types, <span class="keyword">this</span>, args));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>根据前面分析的代码可以看出，这里构造了<code>SpringApplicationRunListener</code>对象，对应的实现类即是<code>EventPublishingRunListener</code>，这个对象提供了广播<code>Spring</code>事件的能力。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># Run Listeners</span><br><span class="line">org.springframework.boot.SpringApplicationRunListener=\</span><br><span class="line">org.springframework.boot.context.event.EventPublishingRunListener</span><br></pre></td></tr></table></figure></p>
 <p>再看<code>listeners.starting()</code>，实际上就是执行了<code>EventPublishingRunListener.starting()</code>方法，这个方法广播了一个<code>ApplicationEnvironmentPreparedEvent</code>事件。</p>
 <hr>
 <p>到这里才真正开始进入读取配置的环节，前面的都是铺垫。<br>通过观察可以看出<code>ConfigFileApplicationListener</code>监听了<code>ApplicationEnvironmentPreparedEvent</code>事件。那么在接收到这个事件的通知之后，又做了什么呢？</p>
 <p>继续往下看…</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onApplicationEvent</span><span class="hljs-params">(ApplicationEvent event)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (event <span class="hljs-keyword">instanceof</span> ApplicationEnvironmentPreparedEvent) &#123;</span><br><span class="line">		onApplicationEnvironmentPreparedEvent(</span><br><span class="line">				(ApplicationEnvironmentPreparedEvent) event);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (event <span class="hljs-keyword">instanceof</span> ApplicationPreparedEvent) &#123;</span><br><span class="line">		onApplicationPreparedEvent(event);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onApplicationEnvironmentPreparedEvent</span><span class="hljs-params">(</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">		ApplicationEnvironmentPreparedEvent event)</span> </span>&#123;</span><br><span class="line">	List&lt;EnvironmentPostProcessor&gt; postProcessors = loadPostProcessors();</span><br><span class="line">	postProcessors.add(<span class="hljs-keyword">this</span>);</span><br><span class="line">	AnnotationAwareOrderComparator.sort(postProcessors);</span><br><span class="line">	<span class="hljs-keyword">for</span> (EnvironmentPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		postProcessor.postProcessEnvironment(event.getEnvironment(),</span><br><span class="line">				event.getSpringApplication());</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里可以看到执行了<code>onApplicationEnvironmentPreparedEvent()</code>方法。首先加载通过<code>SpringFactoriesLoader.loadFactories()</code>加载对应的<code>Processor</code>，然后将<code>ConfigFileApplicationListener</code>也添加到了<code>postProcessors</code>中。原来它也实现了<code>EnvironmentPostProcessor</code>接口。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigFileApplicationListener</span></span></span><br><span class="line"><span class="hljs-class">		<span class="hljs-keyword">implements</span> <span class="hljs-title">EnvironmentPostProcessor</span>, <span class="hljs-title">SmartApplicationListener</span>, <span class="hljs-title">Ordered</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>紧接着执行每个<code>Processor</code>的<code>postProcessEnvironment()</code>方法。这里我们主要关注<code>ConfigFileApplicationListener.postProcessEnvironment()</code>方法。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">postProcessEnvironment</span><span class="hljs-params">(ConfigurableEnvironment environment,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">		SpringApplication application)</span> </span>&#123;</span><br><span class="line">	addPropertySources(environment, application.getResourceLoader());</span><br><span class="line">	configureIgnoreBeanInfo(environment);</span><br><span class="line">	bindToSpringApplication(environment, application);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addPropertySources</span><span class="hljs-params">(ConfigurableEnvironment environment,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">		ResourceLoader resourceLoader)</span> </span>&#123;</span><br><span class="line">	RandomValuePropertySource.addToEnvironment(environment);</span><br><span class="line">	<span class="hljs-comment">// load方法才真正实现加载配置文件内容</span></span><br><span class="line">	<span class="hljs-keyword">new</span> Loader(environment, resourceLoader).load();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>继续跟踪<code>Loader.load()</code>方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">load</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">this</span>.propertiesLoader = <span class="hljs-keyword">new</span> PropertySourcesLoader();</span><br><span class="line">	<span class="hljs-keyword">this</span>.activatedProfiles = <span class="hljs-keyword">false</span>;</span><br><span class="line">	<span class="hljs-keyword">this</span>.profiles = Collections.asLifoQueue(<span class="hljs-keyword">new</span> LinkedList&lt;Profile&gt;());</span><br><span class="line">	<span class="hljs-keyword">this</span>.processedProfiles = <span class="hljs-keyword">new</span> LinkedList&lt;Profile&gt;();</span><br><span class="line"></span><br><span class="line">	Set&lt;Profile&gt; initialActiveProfiles = initializeActiveProfiles();</span><br><span class="line">	<span class="hljs-keyword">this</span>.profiles.addAll(getUnprocessedActiveProfiles(initialActiveProfiles));</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.profiles.isEmpty()) &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> (String defaultProfileName : <span class="hljs-keyword">this</span>.environment.getDefaultProfiles()) &#123;</span><br><span class="line">			Profile defaultProfile = <span class="hljs-keyword">new</span> Profile(defaultProfileName, <span class="hljs-keyword">true</span>);</span><br><span class="line">			<span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.profiles.contains(defaultProfile)) &#123;</span><br><span class="line">				<span class="hljs-keyword">this</span>.profiles.add(defaultProfile);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">this</span>.profiles.add(<span class="hljs-keyword">null</span>);</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">while</span> (!<span class="hljs-keyword">this</span>.profiles.isEmpty()) &#123;</span><br><span class="line">		Profile profile = <span class="hljs-keyword">this</span>.profiles.poll();</span><br><span class="line">		<span class="hljs-keyword">for</span> (String location : getSearchLocations()) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (!location.endsWith(<span class="hljs-string">"/"</span>)) &#123;</span><br><span class="line">				load(location, <span class="hljs-keyword">null</span>, profile);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">for</span> (String name : getSearchNames()) &#123;</span><br><span class="line">					load(location, name, profile);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">this</span>.processedProfiles.add(profile);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	addConfigurationProperties(<span class="hljs-keyword">this</span>.propertiesLoader.getPropertySources());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>这里先不考虑<code>profile</code>的影响，直接看<code>while</code>循环里面且套的<code>foreach</code>循环，进入<code>getSearchLocations()</code><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String CONFIG_LOCATION_PROPERTY = <span class="hljs-string">"spring.config.location"</span>;</span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_SEARCH_LOCATIONS = <span class="hljs-string">"classpath:/,classpath:/config/,file:./,file:./config/"</span>;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> Set&lt;String&gt; <span class="hljs-title">getSearchLocations</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	Set&lt;String&gt; locations = <span class="hljs-keyword">new</span> LinkedHashSet&lt;String&gt;();</span><br><span class="line">	<span class="hljs-comment">// 判断是否修改了配置文件的默认位置</span></span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.environment.containsProperty(CONFIG_LOCATION_PROPERTY)) &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> (String path : asResolvedSet(</span><br><span class="line">				<span class="hljs-keyword">this</span>.environment.getProperty(CONFIG_LOCATION_PROPERTY), <span class="hljs-keyword">null</span>)) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (!path.contains(<span class="hljs-string">"$"</span>)) &#123;</span><br><span class="line">				path = StringUtils.cleanPath(path);</span><br><span class="line">				<span class="hljs-keyword">if</span> (!ResourceUtils.isUrl(path)) &#123;</span><br><span class="line">					path = ResourceUtils.FILE_URL_PREFIX + path;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			locations.add(path);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	locations.addAll(</span><br><span class="line">			asResolvedSet(ConfigFileApplicationListener.<span class="hljs-keyword">this</span>.searchLocations,</span><br><span class="line">					DEFAULT_SEARCH_LOCATIONS));</span><br><span class="line">	<span class="hljs-keyword">return</span> locations;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>从<code>DEFAULT_SEARCH_LOCATIONS</code>可以看出，通常情况下，这个四个位置的配置文件会被默认加载。在回到<code>load()</code>方法里面的<code>foreach</code>循环，会执行<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">for</span> (String name : getSearchNames()) &#123;</span><br><span class="line">	load(location, name, profile);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>在进入<code>getSearchNames()</code>方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_NAMES = <span class="hljs-string">"application"</span>;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> Set&lt;String&gt; <span class="hljs-title">getSearchNames</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.environment.containsProperty(CONFIG_NAME_PROPERTY)) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> asResolvedSet(<span class="hljs-keyword">this</span>.environment.getProperty(CONFIG_NAME_PROPERTY),</span><br><span class="line">			<span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> asResolvedSet(ConfigFileApplicationListener.<span class="hljs-keyword">this</span>.names, DEFAULT_NAMES);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>这里的<code>ConfigFileApplicationListener.this.names</code>是<code>null</code>，所以返回的就是<code>DEFAULT_NAMES</code>。所以，这就是为什么默认配置文件名称都是<code>application</code>。<br>拿到文件名称后，在回到上面的<code>forech</code>方法，执行了<code>load()</code>方法，<code>name</code>即是文件名称<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">load</span><span class="hljs-params">(String location, String name, Profile profile)</span> </span>&#123;</span><br><span class="line">	String group = <span class="hljs-string">"profile="</span> + ((profile != <span class="hljs-keyword">null</span>) ? profile : <span class="hljs-string">""</span>);</span><br><span class="line">	<span class="hljs-keyword">if</span> (!StringUtils.hasText(name)) &#123;</span><br><span class="line">		loadIntoGroup(group, location, profile);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// 支持的文件类型是properties，xml，yml等文件格式</span></span><br><span class="line">		<span class="hljs-keyword">for</span> (String ext : <span class="hljs-keyword">this</span>.propertiesLoader.getAllFileExtensions()) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (profile != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				loadIntoGroup(group, location + name + <span class="hljs-string">"-"</span> + profile + <span class="hljs-string">"."</span> + ext,</span><br><span class="line">						<span class="hljs-keyword">null</span>);</span><br><span class="line">				<span class="hljs-keyword">for</span> (Profile processedProfile : <span class="hljs-keyword">this</span>.processedProfiles) &#123;</span><br><span class="line">					<span class="hljs-keyword">if</span> (processedProfile != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">						loadIntoGroup(group, location + name + <span class="hljs-string">"-"</span></span><br><span class="line">								+ processedProfile + <span class="hljs-string">"."</span> + ext, profile);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				loadIntoGroup(group, location + name + <span class="hljs-string">"-"</span> + profile + <span class="hljs-string">"."</span> + ext,</span><br><span class="line">						profile);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 加载配置文件</span></span><br><span class="line">			loadIntoGroup(group, location + name + <span class="hljs-string">"."</span> + ext, profile);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>再进入<code>loadIntoGroup</code>方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">private</span> PropertySource&lt;?&gt; doLoadIntoGroup(String identifier, String location,</span><br><span class="line">		Profile profile) <span class="hljs-keyword">throws</span> IOException &#123;</span><br><span class="line">	Resource resource = <span class="hljs-keyword">this</span>.resourceLoader.getResource(location);</span><br><span class="line">	PropertySource&lt;?&gt; propertySource = <span class="hljs-keyword">null</span>;</span><br><span class="line">	StringBuilder msg = <span class="hljs-keyword">new</span> StringBuilder();</span><br><span class="line">	<span class="hljs-keyword">if</span> (resource != <span class="hljs-keyword">null</span> &amp;&amp; resource.exists()) &#123;</span><br><span class="line">		String name = <span class="hljs-string">"applicationConfig: ["</span> + location + <span class="hljs-string">"]"</span>;</span><br><span class="line">		String group = <span class="hljs-string">"applicationConfig: ["</span> + identifier + <span class="hljs-string">"]"</span>;</span><br><span class="line">		propertySource = <span class="hljs-keyword">this</span>.propertiesLoader.load(resource, group, name,</span><br><span class="line">				(profile != <span class="hljs-keyword">null</span>) ? profile.getName() : <span class="hljs-keyword">null</span>);</span><br><span class="line">		<span class="hljs-keyword">if</span> (propertySource != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			msg.append(<span class="hljs-string">"Loaded "</span>);</span><br><span class="line">			handleProfileProperties(propertySource);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			msg.append(<span class="hljs-string">"Skipped (empty) "</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		msg.append(<span class="hljs-string">"Skipped "</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	msg.append(<span class="hljs-string">"config file "</span>);</span><br><span class="line">	msg.append(getResourceDescription(location, resource));</span><br><span class="line">	<span class="hljs-keyword">if</span> (profile != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		msg.append(<span class="hljs-string">" for profile "</span>).append(profile);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (resource == <span class="hljs-keyword">null</span> || !resource.exists()) &#123;</span><br><span class="line">		msg.append(<span class="hljs-string">" resource not found"</span>);</span><br><span class="line">		<span class="hljs-keyword">this</span>.logger.trace(msg);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.logger.debug(msg);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> propertySource;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>可以看到这里是通过<code>this.propertiesLoader.load()</code>方法读取配置<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> PropertySource&lt;?&gt; load(Resource resource, String group, String name,</span><br><span class="line">		String profile) <span class="hljs-keyword">throws</span> IOException &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (isFile(resource)) &#123;</span><br><span class="line">		String sourceName = generatePropertySourceName(name, profile);</span><br><span class="line">		<span class="hljs-keyword">for</span> (PropertySourceLoader loader : <span class="hljs-keyword">this</span>.loaders) &#123;</span><br><span class="line">			<span class="hljs-comment">// 判断当前loader是否能读取该类型文件</span></span><br><span class="line">			<span class="hljs-keyword">if</span> (canLoadFileExtension(loader, resource)) &#123;</span><br><span class="line">				PropertySource&lt;?&gt; specific = loader.load(sourceName, resource,</span><br><span class="line">						profile);</span><br><span class="line">				addPropertySource(group, specific);</span><br><span class="line">				<span class="hljs-keyword">return</span> specific;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>然后又通过<code>loader.load()</code>方法执行具体的读取逻辑<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">PropertySourcesLoader</span><span class="hljs-params">(MutablePropertySources propertySources)</span> </span>&#123;</span><br><span class="line">	Assert.notNull(propertySources, <span class="hljs-string">"PropertySources must not be null"</span>);</span><br><span class="line">	<span class="hljs-keyword">this</span>.propertySources = propertySources;</span><br><span class="line">	<span class="hljs-keyword">this</span>.loaders = SpringFactoriesLoader.loadFactories(PropertySourceLoader.class,</span><br><span class="line">			getClass().getClassLoader());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onApplicationEvent</span><span class="params">(ApplicationEvent event)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (event <span class="keyword">instanceof</span> ApplicationEnvironmentPreparedEvent) &#123;</span><br><span class="line">		onApplicationEnvironmentPreparedEvent(</span><br><span class="line">				(ApplicationEnvironmentPreparedEvent) event);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (event <span class="keyword">instanceof</span> ApplicationPreparedEvent) &#123;</span><br><span class="line">		onApplicationPreparedEvent(event);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">onApplicationEnvironmentPreparedEvent</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		ApplicationEnvironmentPreparedEvent event)</span> </span>&#123;</span><br><span class="line">	List&lt;EnvironmentPostProcessor&gt; postProcessors = loadPostProcessors();</span><br><span class="line">	postProcessors.add(<span class="keyword">this</span>);</span><br><span class="line">	AnnotationAwareOrderComparator.sort(postProcessors);</span><br><span class="line">	<span class="keyword">for</span> (EnvironmentPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		postProcessor.postProcessEnvironment(event.getEnvironment(),</span><br><span class="line">				event.getSpringApplication());</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可以看到执行了<code>onApplicationEnvironmentPreparedEvent()</code>方法。首先加载通过<code>SpringFactoriesLoader.loadFactories()</code>加载对应的<code>Processor</code>，然后将<code>ConfigFileApplicationListener</code>也添加到了<code>postProcessors</code>中。原来它也实现了<code>EnvironmentPostProcessor</code>接口。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConfigFileApplicationListener</span></span></span><br><span class="line"><span class="class">		<span class="keyword">implements</span> <span class="title">EnvironmentPostProcessor</span>, <span class="title">SmartApplicationListener</span>, <span class="title">Ordered</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>紧接着执行每个<code>Processor</code>的<code>postProcessEnvironment()</code>方法。这里我们主要关注<code>ConfigFileApplicationListener.postProcessEnvironment()</code>方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessEnvironment</span><span class="params">(ConfigurableEnvironment environment,</span></span></span><br><span class="line"><span class="function"><span class="params">		SpringApplication application)</span> </span>&#123;</span><br><span class="line">	addPropertySources(environment, application.getResourceLoader());</span><br><span class="line">	configureIgnoreBeanInfo(environment);</span><br><span class="line">	bindToSpringApplication(environment, application);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">addPropertySources</span><span class="params">(ConfigurableEnvironment environment,</span></span></span><br><span class="line"><span class="function"><span class="params">		ResourceLoader resourceLoader)</span> </span>&#123;</span><br><span class="line">	RandomValuePropertySource.addToEnvironment(environment);</span><br><span class="line">	<span class="comment">// load方法才真正实现加载配置文件内容</span></span><br><span class="line">	<span class="keyword">new</span> Loader(environment, resourceLoader).load();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>继续跟踪<code>Loader.load()</code>方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">load</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="keyword">this</span>.propertiesLoader = <span class="keyword">new</span> PropertySourcesLoader();</span><br><span class="line">	<span class="keyword">this</span>.activatedProfiles = <span class="keyword">false</span>;</span><br><span class="line">	<span class="keyword">this</span>.profiles = Collections.asLifoQueue(<span class="keyword">new</span> LinkedList&lt;Profile&gt;());</span><br><span class="line">	<span class="keyword">this</span>.processedProfiles = <span class="keyword">new</span> LinkedList&lt;Profile&gt;();</span><br><span class="line"></span><br><span class="line">	Set&lt;Profile&gt; initialActiveProfiles = initializeActiveProfiles();</span><br><span class="line">	<span class="keyword">this</span>.profiles.addAll(getUnprocessedActiveProfiles(initialActiveProfiles));</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.profiles.isEmpty()) &#123;</span><br><span class="line">		<span class="keyword">for</span> (String defaultProfileName : <span class="keyword">this</span>.environment.getDefaultProfiles()) &#123;</span><br><span class="line">			Profile defaultProfile = <span class="keyword">new</span> Profile(defaultProfileName, <span class="keyword">true</span>);</span><br><span class="line">			<span class="keyword">if</span> (!<span class="keyword">this</span>.profiles.contains(defaultProfile)) &#123;</span><br><span class="line">				<span class="keyword">this</span>.profiles.add(defaultProfile);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">this</span>.profiles.add(<span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">while</span> (!<span class="keyword">this</span>.profiles.isEmpty()) &#123;</span><br><span class="line">		Profile profile = <span class="keyword">this</span>.profiles.poll();</span><br><span class="line">		<span class="keyword">for</span> (String location : getSearchLocations()) &#123;</span><br><span class="line">			<span class="keyword">if</span> (!location.endsWith(<span class="string">"/"</span>)) &#123;</span><br><span class="line">				load(location, <span class="keyword">null</span>, profile);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="keyword">for</span> (String name : getSearchNames()) &#123;</span><br><span class="line">					load(location, name, profile);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">this</span>.processedProfiles.add(profile);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	addConfigurationProperties(<span class="keyword">this</span>.propertiesLoader.getPropertySources());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里先不考虑<code>profile</code>的影响，直接看<code>while</code>循环里面且套的<code>foreach</code>循环，进入<code>getSearchLocations()</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String CONFIG_LOCATION_PROPERTY = <span class="string">"spring.config.location"</span>;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DEFAULT_SEARCH_LOCATIONS = <span class="string">"classpath:/,classpath:/config/,file:./,file:./config/"</span>;</span><br><span class="line"><span class="function"><span class="keyword">private</span> Set&lt;String&gt; <span class="title">getSearchLocations</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	Set&lt;String&gt; locations = <span class="keyword">new</span> LinkedHashSet&lt;String&gt;();</span><br><span class="line">	<span class="comment">// 判断是否修改了配置文件的默认位置</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.environment.containsProperty(CONFIG_LOCATION_PROPERTY)) &#123;</span><br><span class="line">		<span class="keyword">for</span> (String path : asResolvedSet(</span><br><span class="line">				<span class="keyword">this</span>.environment.getProperty(CONFIG_LOCATION_PROPERTY), <span class="keyword">null</span>)) &#123;</span><br><span class="line">			<span class="keyword">if</span> (!path.contains(<span class="string">"$"</span>)) &#123;</span><br><span class="line">				path = StringUtils.cleanPath(path);</span><br><span class="line">				<span class="keyword">if</span> (!ResourceUtils.isUrl(path)) &#123;</span><br><span class="line">					path = ResourceUtils.FILE_URL_PREFIX + path;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			locations.add(path);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	locations.addAll(</span><br><span class="line">			asResolvedSet(ConfigFileApplicationListener.<span class="keyword">this</span>.searchLocations,</span><br><span class="line">					DEFAULT_SEARCH_LOCATIONS));</span><br><span class="line">	<span class="keyword">return</span> locations;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>从<code>DEFAULT_SEARCH_LOCATIONS</code>可以看出，通常情况下，这个四个位置的配置文件会被默认加载。在回到<code>load()</code>方法里面的<code>foreach</code>循环，会执行<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (String name : getSearchNames()) &#123;</span><br><span class="line">	load(location, name, profile);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在进入<code>getSearchNames()</code>方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String DEFAULT_NAMES = <span class="string">"application"</span>;</span><br><span class="line"><span class="function"><span class="keyword">private</span> Set&lt;String&gt; <span class="title">getSearchNames</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.environment.containsProperty(CONFIG_NAME_PROPERTY)) &#123;</span><br><span class="line">		<span class="keyword">return</span> asResolvedSet(<span class="keyword">this</span>.environment.getProperty(CONFIG_NAME_PROPERTY),</span><br><span class="line">			<span class="keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> asResolvedSet(ConfigFileApplicationListener.<span class="keyword">this</span>.names, DEFAULT_NAMES);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里的<code>ConfigFileApplicationListener.this.names</code>是<code>null</code>，所以返回的就是<code>DEFAULT_NAMES</code>。所以，这就是为什么默认配置文件名称都是<code>application</code>。<br>拿到文件名称后，在回到上面的<code>forech</code>方法，执行了<code>load()</code>方法，<code>name</code>即是文件名称<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">load</span><span class="params">(String location, String name, Profile profile)</span> </span>&#123;</span><br><span class="line">	String group = <span class="string">"profile="</span> + ((profile != <span class="keyword">null</span>) ? profile : <span class="string">""</span>);</span><br><span class="line">	<span class="keyword">if</span> (!StringUtils.hasText(name)) &#123;</span><br><span class="line">		loadIntoGroup(group, location, profile);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// 支持的文件类型是properties，xml，yml等文件格式</span></span><br><span class="line">		<span class="keyword">for</span> (String ext : <span class="keyword">this</span>.propertiesLoader.getAllFileExtensions()) &#123;</span><br><span class="line">			<span class="keyword">if</span> (profile != <span class="keyword">null</span>) &#123;</span><br><span class="line">				loadIntoGroup(group, location + name + <span class="string">"-"</span> + profile + <span class="string">"."</span> + ext,</span><br><span class="line">						<span class="keyword">null</span>);</span><br><span class="line">				<span class="keyword">for</span> (Profile processedProfile : <span class="keyword">this</span>.processedProfiles) &#123;</span><br><span class="line">					<span class="keyword">if</span> (processedProfile != <span class="keyword">null</span>) &#123;</span><br><span class="line">						loadIntoGroup(group, location + name + <span class="string">"-"</span></span><br><span class="line">								+ processedProfile + <span class="string">"."</span> + ext, profile);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				loadIntoGroup(group, location + name + <span class="string">"-"</span> + profile + <span class="string">"."</span> + ext,</span><br><span class="line">						profile);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 加载配置文件</span></span><br><span class="line">			loadIntoGroup(group, location + name + <span class="string">"."</span> + ext, profile);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>再进入<code>loadIntoGroup</code>方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> PropertySource&lt;?&gt; doLoadIntoGroup(String identifier, String location,</span><br><span class="line">		Profile profile) <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">	Resource resource = <span class="keyword">this</span>.resourceLoader.getResource(location);</span><br><span class="line">	PropertySource&lt;?&gt; propertySource = <span class="keyword">null</span>;</span><br><span class="line">	StringBuilder msg = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">	<span class="keyword">if</span> (resource != <span class="keyword">null</span> &amp;&amp; resource.exists()) &#123;</span><br><span class="line">		String name = <span class="string">"applicationConfig: ["</span> + location + <span class="string">"]"</span>;</span><br><span class="line">		String group = <span class="string">"applicationConfig: ["</span> + identifier + <span class="string">"]"</span>;</span><br><span class="line">		propertySource = <span class="keyword">this</span>.propertiesLoader.load(resource, group, name,</span><br><span class="line">				(profile != <span class="keyword">null</span>) ? profile.getName() : <span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">if</span> (propertySource != <span class="keyword">null</span>) &#123;</span><br><span class="line">			msg.append(<span class="string">"Loaded "</span>);</span><br><span class="line">			handleProfileProperties(propertySource);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			msg.append(<span class="string">"Skipped (empty) "</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		msg.append(<span class="string">"Skipped "</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	msg.append(<span class="string">"config file "</span>);</span><br><span class="line">	msg.append(getResourceDescription(location, resource));</span><br><span class="line">	<span class="keyword">if</span> (profile != <span class="keyword">null</span>) &#123;</span><br><span class="line">		msg.append(<span class="string">" for profile "</span>).append(profile);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (resource == <span class="keyword">null</span> || !resource.exists()) &#123;</span><br><span class="line">		msg.append(<span class="string">" resource not found"</span>);</span><br><span class="line">		<span class="keyword">this</span>.logger.trace(msg);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="keyword">this</span>.logger.debug(msg);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> propertySource;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以看到这里是通过<code>this.propertiesLoader.load()</code>方法读取配置<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> PropertySource&lt;?&gt; load(Resource resource, String group, String name,</span><br><span class="line">		String profile) <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">	<span class="keyword">if</span> (isFile(resource)) &#123;</span><br><span class="line">		String sourceName = generatePropertySourceName(name, profile);</span><br><span class="line">		<span class="keyword">for</span> (PropertySourceLoader loader : <span class="keyword">this</span>.loaders) &#123;</span><br><span class="line">			<span class="comment">// 判断当前loader是否能读取该类型文件</span></span><br><span class="line">			<span class="keyword">if</span> (canLoadFileExtension(loader, resource)) &#123;</span><br><span class="line">				PropertySource&lt;?&gt; specific = loader.load(sourceName, resource,</span><br><span class="line">						profile);</span><br><span class="line">				addPropertySource(group, specific);</span><br><span class="line">				<span class="keyword">return</span> specific;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>然后又通过<code>loader.load()</code>方法执行具体的读取逻辑<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">PropertySourcesLoader</span><span class="params">(MutablePropertySources propertySources)</span> </span>&#123;</span><br><span class="line">	Assert.notNull(propertySources, <span class="string">"PropertySources must not be null"</span>);</span><br><span class="line">	<span class="keyword">this</span>.propertySources = propertySources;</span><br><span class="line">	<span class="keyword">this</span>.loaders = SpringFactoriesLoader.loadFactories(PropertySourceLoader.class,</span><br><span class="line">			getClass().getClassLoader());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>结合<code>META-INF/spring.factories</code>，可以看出<code>loaders</code>实际上<code>PropertiesPropertySourceLoader</code>和<code>YamlPropertySourceLoader</code>对象。</p>
-<p>我们看下<code>PropertiesPropertySourceLoader</code>的<code>load</code>方法。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> PropertySource&lt;?&gt; load(String name, Resource resource, String profile)</span><br><span class="line">		<span class="hljs-keyword">throws</span> IOException &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (profile == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		Properties properties = PropertiesLoaderUtils.loadProperties(resource);</span><br><span class="line">		<span class="hljs-keyword">if</span> (!properties.isEmpty()) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> PropertiesPropertySource(name, properties);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们看下<code>PropertiesPropertySourceLoader</code>的<code>load</code>方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> PropertySource&lt;?&gt; load(String name, Resource resource, String profile)</span><br><span class="line">		<span class="keyword">throws</span> IOException &#123;</span><br><span class="line">	<span class="keyword">if</span> (profile == <span class="keyword">null</span>) &#123;</span><br><span class="line">		Properties properties = PropertiesLoaderUtils.loadProperties(resource);</span><br><span class="line">		<span class="keyword">if</span> (!properties.isEmpty()) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">new</span> PropertiesPropertySource(name, properties);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>由<code>PropertiesLoaderUtils.loadProperties()</code>方法将配置文件中的内容读取写入到<code>Properties</code>对象里，到这里已经执行了<code>Spring Boot</code>对配置文件内容的读取。</p>
 <h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>整个源码分析的过程还是很长的，牵涉到很多的类，中间的关系还是有点复杂。不过如果第一遍看不懂的话，可以多看几遍，多跟踪几遍源码，每次你都会多明白一些原理，看到后面自然就明白其中的原理了。这里为了简化分析，忽略了其他一部分因素的影响，例如<code>profile</code>等。<br>虽然看源码的过程比较枯燥繁琐，且懂不懂源码对业务开发没有明显的影响，但是如果你想突破自己，提升自己，阅读优秀源码是一门必修的课程。</p>
 
-        </div>
-        
-        <div class="level is-size-7 is-uppercase">
-            <div class="level-start">
-                <div class="level-item">
-                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
-                    <a class="has-link-grey -link" href="/tags/Java/">Java</a>, <a class="has-link-grey -link" href="/tags/Spring-Boot/">Spring Boot</a>
-                </div>
-            </div>
-        </div>
-        
-        
-        
+      
     </div>
-</div>
-
-
-<div class="card card-transparent">
-    <div class="level post-navigation is-flex-wrap is-mobile">
-        
-        
-        <div class="level-end">
-            <a class="level level-item has-link-grey  article-nav-next" href="/2018/11/24/Maven多模块-SpringBoot项目/">
-                <span class="level-item">Maven多模块-Spring Boot项目</span>
-                <i class="level-item material-icons">keyboard_arrow_right</i>
-            </a>
-        </div>
-        
-    </div>
-</div>
-
-
-</div>
-                
-
-
-<div class="column has-order-1 is-4-tablet is-4-desktop is-3-widescreen ">
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
     
-        
-<div class="card widget">
-    <div class="card-content">
-        <nav class="level">
-            <div class="level-item has-text-centered">
-                <div>
-                    <img class="image is-128x128 has-mb-6" src="/images/profile.png">
-                    
-                    <p class="is-size-4 is-block">
-                        ManchesterLee
-                    </p>
-                    
-                    
-                    
-                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
-                        <i class="material-icons is-size-5 has-mr-7">location_on</i>
-                        <span>中国 合肥</span>
-                    </p>
-                    
-                </div>
-            </div>
-        </nav>
-        <nav class="level is-mobile">
-            <div class="level-item has-text-centered">
-                <div>
-                    <p class="heading">
-                        文章
-                    </p>
-                    <p class="title has-text-weight-normal">
-                        3
-                    </p>
-                </div>
-            </div>
-            <div class="level-item has-text-centered">
-                <div>
-                    <p class="heading">
-                        分类
-                    </p>
-                    <p class="title has-text-weight-normal">
-                        3
-                    </p>
-                </div>
-            </div>
-            <div class="level-item has-text-centered">
-                <div>
-                    <p class="heading">
-                        标签
-                    </p>
-                    <p class="title has-text-weight-normal">
-                        4
-                    </p>
-                </div>
-            </div>
-        </nav>
-        <div class="level">
-            <a class="level-item button is-link is-rounded" href="https://github.com/ManchesterLee">
-                关注我</a>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            
-            <a class="level-item button is-white" target="_blank" title="Github" href="https://github.com/ManchesterLee">
-                
-                <i class="fab fa-github"></i>
-                
-            </a>
-            
-            <a class="level-item button is-white" target="_blank" title="Facebook" href="http://facebook.com">
-                
-                <i class="fab fa-facebook"></i>
-                
-            </a>
-            
-            <a class="level-item button is-white" target="_blank" title="Twitter" href="http://twitter.com">
-                
-                <i class="fab fa-twitter"></i>
-                
-            </a>
-            
-            <a class="level-item button is-white" target="_blank" title="Dribbble" href="http://dribbble.com">
-                
-                <i class="fab fa-dribbble"></i>
-                
-            </a>
-            
-            <a class="level-item button is-white" target="_blank" title="RSS" href="/">
-                
-                <i class="fas fa-rss"></i>
-                
-            </a>
-            
-        </div>
-        
-    </div>
-</div>
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="https://manchesterlee.github.io/2018/11/25/SpringBoot源码分析-配置文件加载原理/" title="Spring Boot源码分析-配置文件加载原理" target="_blank" rel="external">https://manchesterlee.github.io/2018/11/25/SpringBoot源码分析-配置文件加载原理/</a>
+    </li>
     
-        
-    
-        
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
 
-<div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-        <h3 class="menu-label">
-            链接
-        </h3>
-        <ul class="menu-list">
-        
-            <li>
-                <a class="level" href="https://github.com/ManchesterLee" target="_blank">
-                    <span class="level-left">
-                        <span class="level-item">GitHub</span>
-                    </span>
-                    <span class="level-right">
-                        <span class="level-item tag">https://github.com/ManchesterLee</span>
-                    </span>
-                </a>
-            </li>
-        
-        </ul>
-        </div>
-    </div>
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/ManchesterLee" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/profile.png" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/ManchesterLee" target="_blank"><span class="text-dark">ManchesterLee</span><small class="ml-1x">Java Developer</small></a></h3>
+        <div>致力于Java后端开发</div>
+      </div>
+    </figure>
+  </div>
 </div>
 
 
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom="">
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
     
     
-        <div class="card card-transparent is-hidden-widescreen">
-        
-            
-<div class="card widget">
-    <div class="card-content">
-        <h3 class="menu-label">
-            最新文章
-        </h3>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-11-25T05:05:15.000Z">2018-11-25</time></div>
-                    <a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/" class="has-link-black-ter is-size-6">Spring Boot源码分析-配置文件加载原理</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-11-24T07:40:26.000Z">2018-11-24</time></div>
-                    <a href="/2018/11/24/Maven多模块-SpringBoot项目/" class="has-link-black-ter is-size-6">Maven多模块-Spring Boot项目</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Maven/">Maven</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-10-31T14:48:21.000Z">2018-10-31</time></div>
-                    <a href="/2018/10/31/设计模式-责任链/" class="has-link-black-ter is-size-6">设计模式-责任链</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/设计模式/">设计模式</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-    </div>
-</div>
-
-        
-            
-<div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-            <h3 class="menu-label">
-                分类
-            </h3>
-            <ul class="menu-list">
-            <li>
-        <a class="level is-marginless" href="/categories/Maven/">
-            <span class="level-start">
-                <span class="level-item">Maven</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">1</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/Spring-Boot/">
-            <span class="level-start">
-                <span class="level-item">Spring Boot</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">1</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/设计模式/">
-            <span class="level-start">
-                <span class="level-item">设计模式</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">1</span>
-            </span>
-        </a></li>
-            </ul>
-        </div>
-    </div>
-</div>
-        
-            
-<div class="card widget">
-    <div class="card-content">
-        <h3 class="menu-label">
-            标签云
-        </h3>
-        <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Maven/" style="font-size: 10px;">Maven</a> <a href="/tags/Spring-Boot/" style="font-size: 15px;">Spring Boot</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
-    </div>
-</div>
-
-        
-            <div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-        <h3 class="menu-label">
-            文档
-        </h3>
-        <ul class="menu-list">
-        
-        <li>
-            <a class="level is-marginless" href="/archives/2018/11/">
-                <span class="level-start">
-                    <span class="level-item">十一月 2018</span>
-                </span>
-                <span class="level-end">
-                    <span class="level-item tag">2</span>
-                </span>
-            </a>
-        </li>
-        
-        <li>
-            <a class="level is-marginless" href="/archives/2018/10/">
-                <span class="level-start">
-                    <span class="level-item">十月 2018</span>
-                </span>
-                <span class="level-end">
-                    <span class="level-item tag">1</span>
-                </span>
-            </a>
-        </li>
-        
-        </ul>
-        </div>
-    </div>
-</div>
-        
-        </div>
-    
-</div>
-
-                
-
-
-<div class="column has-order-3 is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only">
-    
-        
-<div class="card widget">
-    <div class="card-content">
-        <h3 class="menu-label">
-            最新文章
-        </h3>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-11-25T05:05:15.000Z">2018-11-25</time></div>
-                    <a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/" class="has-link-black-ter is-size-6">Spring Boot源码分析-配置文件加载原理</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-11-24T07:40:26.000Z">2018-11-24</time></div>
-                    <a href="/2018/11/24/Maven多模块-SpringBoot项目/" class="has-link-black-ter is-size-6">Maven多模块-Spring Boot项目</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Maven/">Maven</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2018-10-31T14:48:21.000Z">2018-10-31</time></div>
-                    <a href="/2018/10/31/设计模式-责任链/" class="has-link-black-ter is-size-6">设计模式-责任链</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/设计模式/">设计模式</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-    </div>
-</div>
-
-    
-        
-<div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-            <h3 class="menu-label">
-                分类
-            </h3>
-            <ul class="menu-list">
-            <li>
-        <a class="level is-marginless" href="/categories/Maven/">
-            <span class="level-start">
-                <span class="level-item">Maven</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">1</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/Spring-Boot/">
-            <span class="level-start">
-                <span class="level-item">Spring Boot</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">1</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/设计模式/">
-            <span class="level-start">
-                <span class="level-item">设计模式</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">1</span>
-            </span>
-        </a></li>
-            </ul>
-        </div>
-    </div>
-</div>
-    
-        
-<div class="card widget">
-    <div class="card-content">
-        <h3 class="menu-label">
-            标签云
-        </h3>
-        <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Maven/" style="font-size: 10px;">Maven</a> <a href="/tags/Spring-Boot/" style="font-size: 15px;">Spring Boot</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
-    </div>
-</div>
-
-    
-        <div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-        <h3 class="menu-label">
-            文档
-        </h3>
-        <ul class="menu-list">
-        
-        <li>
-            <a class="level is-marginless" href="/archives/2018/11/">
-                <span class="level-start">
-                    <span class="level-item">十一月 2018</span>
-                </span>
-                <span class="level-end">
-                    <span class="level-item tag">2</span>
-                </span>
-            </a>
-        </li>
-        
-        <li>
-            <a class="level is-marginless" href="/archives/2018/10/">
-                <span class="level-start">
-                    <span class="level-item">十月 2018</span>
-                </span>
-                <span class="level-end">
-                    <span class="level-item tag">1</span>
-                </span>
-            </a>
-        </li>
-        
-        </ul>
-        </div>
-    </div>
-</div>
+    <li class="next">
+      <a href="/2018/11/24/Maven多模块-SpringBoot项目/" title="Maven多模块-Spring Boot项目"><span>下一篇&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
     
     
-</div>
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
 
-            </div>
-        </div>
-    </section>
-    <footer class="footer">
-    <div class="container">
-        <div class="level">
-            <div class="level-start has-text-centered-mobile">
-                <a class="footer-logo is-block has-mb-6" href="/">
-                
-                    <img src="/images/logo.svg" alt="" height="28">
-                
-                </a>
-                <p class="is-size-7">
-                &copy; 2018 ManchesterLee&nbsp;
-                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a href="http://github.com/ppoffice/hexo-theme-icarus">Icarus</a>
-                </p>
-            </div>
-            <div class="level-end">
-            
-            </div>
+
+</main>
+
+  <footer class="footer" itemscope="" itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/ManchesterLee" target="_blank" title="Github" data-toggle="tooltip" data-placement="top"><i class="icon icon-github"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
         </div>
     </div>
 </footer>
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
-<script>moment.locale("zh-CN");</script>
-
-
-    
-    
-    
-    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
-    <script>
-        (function ($) {
-            $(document).ready(function () {
-                if (typeof($.fn.lightGallery) === 'function') {
-                    $('.article').lightGallery({ selector: '.gallery-item' });
-                }
-                if (typeof($.fn.justifiedGallery) === 'function') {
-                    $('.justified-gallery').justifiedGallery();
-                }
-            });
-        })(jQuery);
-    </script>
-    
-
-    
-    
-    
-    <div id="outdated">
-        <h6>Your browser is out-of-date!</h6>
-        <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update my browser now </a></p>
-        <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            // plugin function, place inside DOM ready function
-            outdatedBrowser({
-                bgColor: '#f25648',
-                color: '#ffffff',
-                lowerThan: 'flex'
-            })
-        });
-    </script>
-    
-
-    
-    
-    
-    <script src="https://cdn.jsdelivr.net/npm/animejs@2.2.0/anime.js"></script>
-    <script>
-    function isIE() {
-        var ua = window.navigator.userAgent;
-        var msie = ua.indexOf('MSIE ');
-        var trident = ua.indexOf('Trident/');
-        return (msie > 0 || trident > 0);
-    }
-
-    $(document).ready(function () {
-        $('body').css('opacity', 1);
-        if (!isIE()) {
-            ['.main > .column:first-child .card',
-            '.main > .column:nth-child(2) .card',
-            '.main > .column:last-child .card'].map(function(target) {
-                anime({
-                    targets: target,
-                    scale: [0.8, 1],
-                    opacity: [0, 1],
-                    duration: 300,
-                    easing: 'easeOutSine',
-                    delay: function(el, i, l) {
-                        return i * 100;
-                    }
-                })
-            });
-    
-            anime({
-                targets: '.navbar-main',
-                translateY: [-100, 0],
-                opacity: [0, 1],
-                duration: 300,
-                easing: 'easeOutSine'
-            });
-        }
-    });
-    </script>
-    
-
-    
-    
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
 <script>
-    MathJax.Hub.Config({
-        "HTML-CSS": {matchFontHeight: false},
-        SVG: {matchFontHeight: false},
-        CommonHTML: {matchFontHeight: false}
-    });
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
+<script src="/js/plugin.min.js"></script>
+<script src="/js/application.js"></script>
 
-    
-    
-
-<a id="back-to-top" class="card has-text-centered" title="回到顶端" href="javascript:;">
-    <i class="material-icons">keyboard_arrow_up</i>
-</a>
-<style>
-#back-to-top {
-    position: fixed;
-    bottom: 20px;
-    width: 64px;
-    padding: 8px 0;
-    transition: 0.4s ease opacity, 0.4s ease transform;
-    opacity: 0;
-    font-size: 0;
-    transform: translateY(120px);
-}
-#back-to-top.fade-in {
-    opacity: 1;
-}
-#back-to-top.rise-up {
-    transform: translateY(0);
-}
-@media screen and (max-width: 1087px) {
-    #back-to-top {
-        right: 1rem;
-    }
-}
-@media screen and (max-width: 768px) {
-    #back-to-top {
-        right: .75rem;
-    }
-}
-</style>
-<script>
-    $(document).ready(function () {
-        var $button = $('#back-to-top');
-        var $mainColumn = $('.main .has-order-2');
-        var $leftColumn = $('.main .has-order-1');
-        var $rightColumn = $('.main .has-order-3');
-        var lastScrollTop = 0;
-
-        function update() {
-            // desktop mode or tablet mode with only right sidebar enabled
-            if (window.innerWidth > 1077 || (window.innerWidth > 768 && $leftColumn.length === 0 && $rightColumn.length === 1)) {
-                var padding = ($mainColumn.outerWidth() - $mainColumn.width()) / 2;
-                var left = $mainColumn.offset().left + $mainColumn.outerWidth() + padding;
-                left = Math.min(left, document.documentElement.clientWidth - $button.outerWidth(true) - padding);
-                $button.css('left', left);
-                var minScrollTop = 0;
-                if ($rightColumn.length > 0) {
-                    minScrollTop = Math.max.apply(null, $rightColumn.find('.widget').map(function () {
-                        return $(this).offset().top + $(this).outerHeight(true);
-                    }));
-                }
-                if ($(window).scrollTop() + $(window).height() >= minScrollTop + padding + $button.outerHeight(true)) {
-                    $button.addClass('fade-in');
-                } else {
-                    $button.removeClass('fade-in');
-                }
-                $button.addClass('rise-up');
-            } else {
-                // mobile and tablet mode
-                $button.addClass('fade-in');
-                $button.css('left', '');
-                var scrollTop = $(window).scrollTop();
-                if (scrollTop > lastScrollTop || scrollTop === 0) {
-                    $('#back-to-top').removeClass('rise-up');
-                } else {
-                    $('#back-to-top').addClass('rise-up');
-                }
-                lastScrollTop = scrollTop;
-            }
-        }
-
-        update();
-        $(window).resize(update);
-        $(window).scroll(update);
-
-        $('#back-to-top').on('click', function () {
-            $('body, html').animate({ scrollTop: 0 }, 400);
-        });
-    });
-</script>
-
-
-    
-    
-
-    
-    
-    
-    
-
-    
-
-
-<script src="/js/main.js"></script>
-
-    
-    <div class="searchbox ins-search">
-    <div class="searchbox-container ins-search-container">
-        <div class="searchbox-input-wrapper">
-            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
-            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
-        </div>
-        <div class="searchbox-result-wrapper ins-section-wrapper">
-            <div class="ins-section-container"></div>
-        </div>
-    </div>
-</div>
-<script>
-    (function (window) {
-        var INSIGHT_CONFIG = {
-            TRANSLATION: {
-                POSTS: '文章',
-                PAGES: '页面',
-                CATEGORIES: '分类',
-                TAGS: '标签',
-                UNTITLED: '(无标题)',
-            },
-            CONTENT_URL: '/content.json',
-        };
-        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
-    })(window);
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: '文章',
+            PAGES: '页面',
+            CATEGORIES: '分类',
+            TAGS: '标签',
+            UNTITLED: '(未命名)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
 </script>
 <script src="/js/insight.js"></script>
-<link rel="stylesheet" href="/css/search.css">
-<link rel="stylesheet" href="/css/insight.css">
+
+
+
+
+
+   
+
+
+
+
+   
     
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
 </body>
 </html>

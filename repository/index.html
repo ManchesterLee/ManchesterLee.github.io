@@ -17,16 +17,17 @@
   <meta http-equiv="window-target" content="_top">
   
   
-  <title>分类: Spring Boot | Lee</title>
+  <title>Repositories | Lee</title>
   <meta property="og:type" content="website">
-<meta property="og:title" content="ManchesterLee">
-<meta property="og:url" content="https://manchesterlee.github.io/categories/Spring-Boot/index.html">
+<meta property="og:title" content="Repositories">
+<meta property="og:url" content="https://manchesterlee.github.io/repository/index.html">
 <meta property="og:site_name" content="ManchesterLee">
 <meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2018-11-28T13:42:18.510Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ManchesterLee">
+<meta name="twitter:title" content="Repositories">
   <!-- Canonical links -->
-  <link rel="canonical" href="https://manchesterlee.github.io/categories/Spring-Boot/index.html">
+  <link rel="canonical" href="https://manchesterlee.github.io/repository/index.html">
   
   
     <link rel="icon" href="/favicon.png" type="image/x-icon">
@@ -39,7 +40,7 @@
 </head>
 
 
-<body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage">
+<body class="main-center theme-black no-sidebar" itemscope itemtype="http://schema.org/WebPage">
   <header class="header" itemscope="" itemtype="http://schema.org/WPHeader">
   <div class="slimContent">
     <div class="navbar-header">
@@ -269,54 +270,45 @@
 
   
   <main class="main" role="main">
-  <article class="content article article-categories article-type-list" itemscope="">
-    <header class="article-header">
-      <h1 itemprop="name" class="hidden-xs">分类: Spring Boot</h1>
-      <p class="hidden-xs">共 1 篇文章</p>
-      <nav role="navigation" id="nav-main" class="okayNav">
-        <ul>
-          <li><a href="/categories">All</a></li>
-          
-          <li><a href="/categories/Maven/">Maven</a></li>
-          
-          <li><a href="/categories/设计模式/">设计模式</a></li>
-          
-          <li><a href="/categories/Spring-Boot/">Spring Boot</a></li>
-          
-        </ul>
-      </nav>
-    </header>
-    <!-- /header -->
-    <div class="article-body">
-      <div class="panel panel-default b-no">
-    <div class="panel-heading" role="tab">
-        <h4 class="panel-title">
-            <a data-toggle="collapse" href="#collapseSpring Boot" aria-expanded="true">
-              <i class="icon icon-folder text-active"></i><i class="icon icon-folder-open text"></i>
-              Spring Boot
-            </a>
-            <small class="text-muted">(Total 1 articles)</small>
-        </h4>
+  <article class="article article-repository article-type-list" itemscope="">
+  <header class="article-header">
+    <h1 itemprop="title">Repositories</h1>
+    <p class="text-muted">I have <span id="repo-count">0</span> projects on Github</p>
+  </header>
+  <div class="article-body">
+    <div class="repo-content">
+      <div class="blankslate">
+        <p>正在加载...</p>
+      </div>
     </div>
-    <div id="collapseSpring Boot" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingSpring Boot">
-        <div class="panel-body">
-            <div class="collection">
-              
-                
-<a href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/" class="collection-item" target="_blank" itemprop="url">
-  <time datetime="2018-11-25T05:05:15.000Z" itemprop="datePublished">2018-11-25</time>
-  <span>&nbsp;&nbsp;&nbsp;</span> Spring Boot源码分析-配置文件加载原理
-</a>
+  </div>
+</article>
+
+  
 
 
-              
-            </div>
-        </div>
+
+<!--Github项模版-->
+<script type="text/template" id="list-template">
+  <li class="col-sm-6 col-md-6 col-lg-4">
+    <div class="repo hover-shadow hover-grow">
+      <div class="repo-image geopattern" data-pattern-id="{%=name%}"></div>
+      <h3 class="repo-title"><a href="{%=clone_url%}" target="_blank" rel="external nofollow noopener noreferrer">{%=full_name%}</a></h3>
+      <p class="repo-body">{%=description%}</p>
+      <div class="repo-meta">
+        <span class="meta meta-type pull-left" aria-label="{%=language%} project">{%=language%}</span>
+        <span class="meta meta-star" aria-label="{%=stargazers_count%} stars"><i class="icon icon-star-fill"></i> {%=stargazers_count%}</span>
+        <span class="meta meta-fork" aria-label="{%=forks_count%} forks"><i class="icon icon-code-fork"></i> {%=forks_count%}</span>
+        <span class="meta meta-last-updated" aria-label="最后更新时间：{%=updated_at%}">
+        <i class="icon icon-clock"></i> <time datetime="{%=updated_at%}">{%=updated_at%}</time></span>
+      </div>
     </div>
-</div>
-    </div>
-  </article>
-   
+  </li>
+</script>
+<!--获取失败模版-->
+<script type="text/template" id="error-template">
+  <h3>加载失败</h3><p>请刷新或稍后再试...</p>
+</script>
 </main>
 
   <footer class="footer" itemscope="" itemtype="http://schema.org/WPFooter">
@@ -360,6 +352,51 @@ window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
 <script src="/js/insight.js"></script>
 
+
+
+   <script type="text/javascript">
+var open = function() {
+  var baiduTpl = new Object();
+  var handleTpl = function() {
+    baiduTpl.list = baidu.template("list-template");
+    baiduTpl.error = baidu.template("error-template");
+  };
+
+  var handleGithub = function() {
+    var repoContainer = $('.repo-content');
+    var errorContainer = repoContainer.find(".blankslate");
+    var countContainer = $("#repo-count");
+
+    $.get("https://api.github.com/users/ManchesterLee/repos", function(result) {
+      if (result) {
+        errorContainer.remove();
+        countContainer.text(result.length); //设置项目个数
+        var ul = $("<ul class='repo-list row clearfix'></ul>");
+        for (var i in result) {
+          var repo = result[i];
+          repo.updated_at = repo.updated_at.substring(0, repo.updated_at.lastIndexOf("T"));
+          var html = baiduTpl.list(repo);
+          ul.append(html);
+        }
+        repoContainer.append(ul);
+        $(".geopattern").each(function() {
+          $(this).geopattern($(this).data('pattern-id'));
+        });
+      } else {
+        errorContainer.append(baiduTpl.error());
+      }
+    });
+  };
+
+  return {
+    init: function() {
+      handleTpl();
+      handleGithub();
+    }
+  }
+};
+$(open().init);
+</script>
 
 
 
