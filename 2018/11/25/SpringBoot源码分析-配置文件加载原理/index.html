@@ -15,7 +15,7 @@
 <meta property="og:site_name" content="ManchesterLee">
 <meta property="og:description" content="Spring Boot框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在application.properties或application.yml中，本文就让我们一起来探讨一下Spring Boot如何加载配置文件中的内容。">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2018-11-26T10:10:10.654Z">
+<meta property="og:updated_time" content="2018-11-28T12:38:24.877Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spring Boot源码分析-配置文件加载原理">
 <meta name="twitter:description" content="Spring Boot框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在application.properties或application.yml中，本文就让我们一起来探讨一下Spring Boot如何加载配置文件中的内容。">
@@ -148,7 +148,7 @@ var _hmt = _hmt || [];
                 <span class="level-item has-text-grey">
                     
                     
-                    18 分钟 读完 (大约 2634 个字)
+                    18 分钟 读完 (大约 2641 个字)
                 </span>
                 
             </div>
@@ -163,6 +163,9 @@ var _hmt = _hmt || [];
             <p><code>Spring Boot</code>框架提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程，但是还是有部分配置是无法提供默认值得，这时候就需要我们自己手动配置。一般情况下，我们的配置都是写在<code>application.properties</code>或<code>application.yml</code>中，本文就让我们一起来探讨一下<code>Spring Boot</code>如何加载配置文件中的内容。</p>
 <a id="more"></a>
 <p>本文针对有一定<code>Spring Boot</code>使用基础的同学，才能更好地理解后面叙述的内容。</p>
+<blockquote>
+<p>基于<code>Spring Boot`</code>1.5.6.RELEASE`版本</p>
+</blockquote>
 <p>首先让我们了解一下<code>Spring Boot</code></p>
 <ul>
 <li><p>简介（<a href="https://baike.baidu.com/item/Spring%20Boot/20249767?fr=aladdin" target="_blank" rel="noopener">以下内容来自百度百科</a>）</p>
