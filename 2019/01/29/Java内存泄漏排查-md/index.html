@@ -2,7 +2,7 @@
 <html lang="zh">
 <head><meta name="generator" content="Hexo 3.8.0">
     <meta charset="utf-8">
-<title>ManchesterLee</title>
+<title>Java内存泄漏排查 - ManchesterLee</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
 
@@ -75,7 +75,7 @@
         <div class="navbar-brand is-flex-center">
             <a class="navbar-item navbar-logo" href="/">
             
-                <img src="/images/logo.svg" alt="ManchesterLee" height="28">
+                <img src="/images/logo.svg" alt="Java内存泄漏排查" height="28">
             
             </a>
         </div>
@@ -83,7 +83,7 @@
             
             <div class="navbar-start">
                 
-                <a class="navbar-item is-active" href="/">主页</a>
+                <a class="navbar-item" href="/">主页</a>
                 
                 <a class="navbar-item" href="/archives">归档</a>
                 
@@ -118,8 +118,7 @@
     <section class="section">
         <div class="container">
             <div class="columns">
-                <div class="column is-8-tablet is-8-desktop is-8-widescreen has-order-2 column-main">
-    <div class="card">
+                <div class="column is-8-tablet is-8-desktop is-8-widescreen has-order-2 column-main"><div class="card">
     
     <div class="card-content article ">
         
@@ -139,21 +138,64 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/01/29/Java内存泄漏排查-md/">Java内存泄漏排查</a>
+                Java内存泄漏排查
             
         </h1>
         <div class="content">
             <p>任何使用Java开发应用的开发者都会或多或少遇到OOM（OutOfMemoryError），这个问题的产生源自我们对程序设计的不合理以及对象无法及时释放所占空间导致的。往往此类问题较难排查，需要分析JVM堆内存中对象进行分析才能准确的定位根据原因。本文将介绍一个开发过程中遇到的一个问题，并讲解如何利用JVM工具以及<a href="https://www.eclipse.org/mat/" target="_blank" rel="noopener">MAT</a>进行问题排查。</p>
+<a id="more"></a>
+<h1 id="什么是OOM"><a href="#什么是OOM" class="headerlink" title="什么是OOM"></a>什么是OOM</h1><p>在JVM没有足够的堆内存空间分配给新对象的时候，就会抛出java.lang.OutOfMemoryError错误。</p>
+<h1 id="为什么会发生OOM"><a href="#为什么会发生OOM" class="headerlink" title="为什么会发生OOM"></a>为什么会发生OOM</h1><p>通常，在没有足够的空间在Java堆中分配对象时，会抛出此错误。在这种情况下，对象申请的内存空间超过堆内存剩余空间，垃圾收集器无法回收足够的空间，并且无法进一步扩展堆内存空间。在极少数情况下，当垃圾收集器花费过多的时间，且释放的内存很少也可能导致OOM。</p>
+<hr>
+<h1 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h1><p>假设在JVM内存空间足够的情况下发生了OOM，很可能就是代码中存在问题，导致对象所占空间无法被及时释放，从而引起应用发生OOM。所以需要分析JVM堆内存快照（heapdump），找出无法被释放的对象，确定问题发生的原因。</p>
+<p>接下来用一个实际案例，讲述如何通过JVM工具以及<a href="https://www.eclipse.org/mat/" target="_blank" rel="noopener">MAT</a>排查内存泄漏问题。</p>
+<h1 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h1><ol>
+<li><p>程序执行一段时间后，抛出OOM错误，如下图。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/oom.png" alt="OOM"></p>
+</li>
+<li><p>开启VisualVM连接虚拟机，观察堆内存使用情况，可以发现内存使用持续增加。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/visualvm.png" alt="VisualVM"></p>
+</li>
+<li><p>通过<code>jstat -gc</code>观察虚拟机各分区垃圾回收情况。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/jstat.png" alt="jstat"><br>由图中可以看出年轻代回收次数很多，但是内存能够正常回收，但是老年代回收内存基本没有释放，反而使用空间更大（最后两条GC日志）。</p>
+</li>
+<li><p>然后通过<code>jmap</code>命令生成堆内存快照，通过MAT分析。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-statistics.png" alt="MAT"><br>这里可以看出，有可疑对象占用了1.4GB内存，接下来查看可疑的泄漏对象<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-suspect.png" alt="MAT"><br>通过MAT的Leak Suspects（可疑的泄漏对象）发现，共有955个<code>com.alibaba.fastjson.JSONObject</code>对象占用了91.85%的内存空间。从这里能够看出来应该是这个<code>com.alibaba.fastjson.JSONObject</code>无法及时释放，导致的内存泄漏问题。那么为什么这些对象为什么无法被回收呢？</p>
+</li>
+</ol>
+<p>接下来通过MAT的Dominator Tree分析对象引用关系。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-tree.png" alt="MAT"><br>从图中可以看出，内存中有非常多的<code>com.alibaba.fastjson.JSONObject</code>对象实例。随机选中一个实例，通过右键观察持有该对象引用的对象。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-object-ref.png" alt="MAT"></p>
+<p>通过图中可以看出该对象被三个对象引用，而这三个对象又分别被别的对象引用，引用关系如下：</p>
+<ul>
+<li><code>ArrayList @ 0x835c2110</code><ul>
+<li><code>HashMap @ 0x846e7608</code><ul>
+<li><code>Thread @ 0x8221e450 main</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>ArrayList @ 0x841a04b8</code><ul>
+<li><code>HashMap @ 0x83d64de0</code><ul>
+<li><code>Thread @ 0x83ecb138 data-sort-6</code></li>
+<li><code>Thread @ 0x84056440 data-sort-4</code></li>
+<li><code>Thread @ 0x840568a8 data-sort-1</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>ArrayList @ 0x846e75f0</code><ul>
+<li><code>Thread @ 0x8221e450 main</code></li>
+</ul>
+</li>
+</ul>
+<p>由此可以看出，该对象被三个<code>ArrayList</code>对象持有引用，且这三个<code>ArrayList</code>中的两个直接和间接的被<code>Thread main</code>持有引用，另一个<code>ArrayList</code>对象被三个子线程间接持有引用，由于子线程执行完毕之后会释放对象引用，故排除子线程。接下来主要观察主线程对该对象引用的持有情况，由于存在两出引用关系，且在主线程中分别被<code>HashMap</code>和<code>ArrayList</code>对象直接持有，故在代码中寻找两处引用的地方，最后发现，由于开发人员只释放了<code>HashMap</code>对<code>com.alibaba.fastjson.JSONObject</code>的引用，而<code>ArrayList</code>并没有释放，最终导致程序在执行一段时间之后产生OOM错误。</p>
+
         </div>
         
-        
-        <div class="level is-mobile">
+        <div class="level is-size-7 is-uppercase">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/01/29/Java内存泄漏排查-md/#more">阅读更多</a>
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/JVM/">JVM</a>, <a class="has-link-grey -link" href="/tags/Java/">Java</a>, <a class="has-link-grey -link" href="/tags/MAT/">MAT</a>, <a class="has-link-grey -link" href="/tags/内存泄漏/">内存泄漏</a>, <a class="has-link-grey -link" href="/tags/内存溢出/">内存溢出</a>
                 </div>
             </div>
         </div>
+        
         
         
     </div>
@@ -161,162 +203,50 @@
 
 
 
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2018-11-25T05:05:15.000Z">2018-11-25</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    17 分钟 读完 (大约 2620 个字)
-                </span>
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
             
-                <a class="has-link-black-ter" href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/">Spring Boot源码分析-配置文件加载原理</a>
-            
-        </h1>
-        <div class="content">
-            <p><code>Spring Boot</code>是目前最流行的Java开发框架，它提供了很多的默认配置，不需要我们再去逐一配置，极大地简化了开发流程。项目中的部分具体配置值一般都写在<code>application.properties</code>或<code>application.yml</code>中，本文就让我们一起来探讨一下<code>Spring Boot</code>如何加载配置文件中的内容。</p>
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="http://pm3gzi55c.bkt.clouddn.com/qrcode/alipay-qrcode.JPG" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="http://pm3gzi55c.bkt.clouddn.com/qrcode/wechat-qrcode.JPG" alt="微信"></div>
+</a>
+
+                
         </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
     </div>
 </div>
 
 
 
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
         
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2018-11-24T07:40:26.000Z">2018-11-24</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Maven/">Maven</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    5 分钟 读完 (大约 727 个字)
-                </span>
-                
-            </div>
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/11/25/SpringBoot源码分析-配置文件加载原理/">
+                <span class="level-item">Spring Boot源码分析-配置文件加载原理</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
         </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2018/11/24/Maven多模块-SpringBoot项目/">Maven多模块-Spring Boot项目</a>
-            
-        </h1>
-        <div class="content">
-            <p>在开发过程中，为了方便我们可能会将所有的代码都放在一个项目中，所有人的工作内容都集中在一起。随着业务的快速发展，会导致整个项目越来越复杂和后期维护难等问题。而项目模块化可以更好的实现代码复用，简化项目结构，使逻辑更加清晰，也方便团队分工合作，后期扩展和维护。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2018/11/24/Maven多模块-SpringBoot项目/#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
         
     </div>
 </div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2018-10-31T14:48:21.000Z">2018-10-31</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/设计模式/">设计模式</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    5 分钟 读完 (大约 688 个字)
-                </span>
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2018/10/31/设计模式-责任链/">设计模式-责任链</a>
-            
-        </h1>
-        <div class="content">
-            <p>责任链设计模式是一种行为模式，其中一组对象按顺序连接在一起，请求在对象链上传递，直到有一个对象处理该请求，返回一个响应对象。否则该请求将继续往下传递。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2018/10/31/设计模式-责任链/#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
 
 
 </div>
@@ -593,7 +523,7 @@
             <div class="level-start has-text-centered-mobile">
                 <a class="footer-logo is-block has-mb-6" href="/">
                 
-                    <img src="/images/logo.svg" alt="ManchesterLee" height="28">
+                    <img src="/images/logo.svg" alt="Java内存泄漏排查" height="28">
                 
                 </a>
                 <p class="is-size-7">

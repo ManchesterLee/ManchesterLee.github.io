@@ -7,26 +7,6 @@
 
 
 
-    <meta name="description" content="在开发过程中，为了方便我们可能会将所有的代码都放在一个项目中，所有人的工作内容都集中在一起。随着业务的快速发展，会导致整个项目越来越复杂和后期维护难等问题。而项目模块化可以更好的实现代码复用，简化项目结构，使逻辑更加清晰，也方便团队分工合作，后期扩展和维护。">
-<meta name="keywords" content="Java,Spring Boot,Maven">
-<meta property="og:type" content="article">
-<meta property="og:title" content="Maven多模块-Spring Boot项目">
-<meta property="og:url" content="https://manchesterlee.github.io/2018/11/24/Maven多模块-SpringBoot项目/index.html">
-<meta property="og:site_name" content="ManchesterLee">
-<meta property="og:description" content="在开发过程中，为了方便我们可能会将所有的代码都放在一个项目中，所有人的工作内容都集中在一起。随着业务的快速发展，会导致整个项目越来越复杂和后期维护难等问题。而项目模块化可以更好的实现代码复用，简化项目结构，使逻辑更加清晰，也方便团队分工合作，后期扩展和维护。">
-<meta property="og:locale" content="zh-CN">
-<meta property="og:image" content="https://manchesterlee.github.io/images/post/2018_11_24_1.png">
-<meta property="og:image" content="https://manchesterlee.github.io/images/post/2018_11_24_2.png">
-<meta property="og:image" content="https://manchesterlee.github.io/images/post/2018_11_24_3.png">
-<meta property="og:image" content="https://manchesterlee.github.io/images/post/2018_11_24_4.png">
-<meta property="og:image" content="https://manchesterlee.github.io/images/post/2018_11_24_5.png">
-<meta property="og:image" content="https://manchesterlee.github.io/images/post/2018_11_24_6.png">
-<meta property="og:updated_time" content="2018-11-26T10:10:18.180Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Maven多模块-Spring Boot项目">
-<meta name="twitter:description" content="在开发过程中，为了方便我们可能会将所有的代码都放在一个项目中，所有人的工作内容都集中在一起。随着业务的快速发展，会导致整个项目越来越复杂和后期维护难等问题。而项目模块化可以更好的实现代码复用，简化项目结构，使逻辑更加清晰，也方便团队分工合作，后期扩展和维护。">
-<meta name="twitter:image" content="https://manchesterlee.github.io/images/post/2018_11_24_1.png">
-
 
 
 
@@ -103,15 +83,13 @@
             
             <div class="navbar-start">
                 
-                <a class="navbar-item" href="/">Home</a>
+                <a class="navbar-item" href="/">主页</a>
                 
-                <a class="navbar-item" href="/archives">Archives</a>
+                <a class="navbar-item" href="/archives">归档</a>
                 
-                <a class="navbar-item" href="/categories">Categories</a>
+                <a class="navbar-item" href="/categories">分类</a>
                 
-                <a class="navbar-item" href="/tags">Tags</a>
-                
-                <a class="navbar-item" href="/about">About</a>
+                <a class="navbar-item" href="/tags">标签</a>
                 
             </div>
             
@@ -216,28 +194,23 @@
         <div class="buttons is-centered">
             
                 
-<div class="notification is-danger">
-    You forgot to set the <code>qrcode</code> for Alipay. Please set it in <code>_config.yml</code>.
-</div>
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="http://pm3gzi55c.bkt.clouddn.com/qrcode/alipay-qrcode.JPG" alt="支付宝"></div>
+</a>
 
                 
                 
-<div class="notification is-danger">
-    You forgot to set the <code>qrcode</code> for Wechat. Please set it in <code>_config.yml</code>.
-</div>
-
-                
-                <!-- Visit https://www.paypal.com/donate/buttons/ to get your donate button -->
-
-<div class="notification is-danger">
-    You forgot to set the <code>business</code> and <code>currency_code</code> for Paypal. Please set it in <code>_config.yml</code>.
-</div>
-
-                
-                
-<div class="notification is-danger">
-    You forgot to set the <code>url</code> Patreon. Please set it in <code>_config.yml</code>.
-</div>
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="http://pm3gzi55c.bkt.clouddn.com/qrcode/wechat-qrcode.JPG" alt="微信"></div>
+</a>
 
                 
         </div>
@@ -278,45 +251,6 @@
 <div class="column is-4-tablet is-4-desktop is-4-widescreen  has-order-3 column-right ">
     
         
-    
-        
-
-<div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-        <h3 class="menu-label">
-            链接
-        </h3>
-        <ul class="menu-list">
-        
-            <li>
-                <a class="level is-mobile" href="https://hexo.io" target="_blank">
-                    <span class="level-left">
-                        <span class="level-item">Hexo</span>
-                    </span>
-                    <span class="level-right">
-                        <span class="level-item tag">hexo.io</span>
-                    </span>
-                </a>
-            </li>
-        
-            <li>
-                <a class="level is-mobile" href="https://github.com/ppoffice" target="_blank">
-                    <span class="level-left">
-                        <span class="level-item">PPOffice</span>
-                    </span>
-                    <span class="level-right">
-                        <span class="level-item tag">github.com</span>
-                    </span>
-                </a>
-            </li>
-        
-        </ul>
-        </div>
-    </div>
-</div>
-
-
     
         
 <div class="card widget">
@@ -362,7 +296,7 @@
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Maven/" style="font-size: 10px;">Maven</a> <a href="/tags/Spring-Boot/" style="font-size: 15px;">Spring Boot</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
+        <a href="/tags/JVM/" style="font-size: 10px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MAT/" style="font-size: 10px;">MAT</a> <a href="/tags/Maven/" style="font-size: 10px;">Maven</a> <a href="/tags/Spring-Boot/" style="font-size: 15px;">Spring Boot</a> <a href="/tags/内存泄漏/" style="font-size: 10px;">内存泄漏</a> <a href="/tags/内存溢出/" style="font-size: 10px;">内存溢出</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
     </div>
 </div>
 
@@ -373,6 +307,25 @@
         <h3 class="menu-label">
             最新文章
         </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/01/29/Java内存泄漏排查-md/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="Java内存泄漏排查">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-01-29T12:18:58.000Z">2019-01-29</time></div>
+                    <a href="/2019/01/29/Java内存泄漏排查-md/" class="has-link-black-ter is-size-6">Java内存泄漏排查</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
         
         <article class="media">
             
@@ -444,6 +397,17 @@
         <ul class="menu-list">
         
         <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
             <a class="level is-marginless" href="/archives/2018/11/">
                 <span class="level-start">
                     <span class="level-item">十一月 2018</span>
@@ -479,9 +443,23 @@
             <div class="field is-grouped is-grouped-multiline">
                 
                 <div class="control">
+                    <a class="tags has-addons" href="/tags/JVM/">
+                        <span class="tag">JVM</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
                     <a class="tags has-addons" href="/tags/Java/">
                         <span class="tag">Java</span>
-                        <span class="tag is-grey">3</span>
+                        <span class="tag is-grey">4</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/MAT/">
+                        <span class="tag">MAT</span>
+                        <span class="tag is-grey">1</span>
                     </a>
                 </div>
                 
@@ -496,6 +474,20 @@
                     <a class="tags has-addons" href="/tags/Spring-Boot/">
                         <span class="tag">Spring Boot</span>
                         <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/内存泄漏/">
+                        <span class="tag">内存泄漏</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/内存溢出/">
+                        <span class="tag">内存溢出</span>
+                        <span class="tag is-grey">1</span>
                     </a>
                 </div>
                 
