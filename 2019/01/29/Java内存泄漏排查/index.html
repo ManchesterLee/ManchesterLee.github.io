@@ -130,7 +130,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    8 分钟 读完 (大约 1170 个字)
+                    8 分钟 读完 (大约 1173 个字)
                 </span>
                 
             </div>
@@ -159,7 +159,7 @@
 <li><p>然后通过<code>jmap</code>命令生成堆内存快照，通过MAT分析。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-statistics.png" alt="MAT"><br>这里可以看出，有可疑对象占用了1.4GB内存，接下来查看可疑的泄漏对象<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-suspect.png" alt="MAT"><br>通过MAT的Leak Suspects（可疑的泄漏对象）发现，共有955个<code>com.alibaba.fastjson.JSONObject</code>对象占用了91.85%的内存空间。从这里能够看出来应该是这个<code>com.alibaba.fastjson.JSONObject</code>无法及时释放，导致的内存泄漏问题。那么为什么这些对象为什么无法被回收呢？</p>
 </li>
 </ol>
-<p>接下来通过MAT的Dominator Tree分析对象引用关系。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-tree.png" alt="MAT"><br>从图中可以看出，内存中有非常多的<code>com.alibaba.fastjson.JSONObject</code>对象实例。随机选中一个实例，通过右键观察持有该对象引用的对象。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-object-ref.png" alt="MAT"></p>
+<p>接下来通过MAT的Dominator Tree分析对象引用关系。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-tree.png" alt="MAT"><br>从图中可以看出，内存中有非常多的<code>com.alibaba.fastjson.JSONObject</code>对象实例。随机选中一个实例，通过右键观察持有该对象引用的对象(list -&gt; Incoming References)。<br><img src="http://pm3gzi55c.bkt.clouddn.com/img/2019-01-29/mat-object-ref.png" alt="MAT"></p>
 <p>通过图中可以看出该对象被三个对象引用，而这三个对象又分别被别的对象引用，引用关系如下：</p>
 <ul>
 <li><code>ArrayList @ 0x835c2110</code><ul>
@@ -318,7 +318,7 @@
         
         <article class="media">
             
-            <a href="/2019/01/29/Java内存泄漏排查-md/" class="media-left">
+            <a href="/2019/01/29/Java内存泄漏排查/" class="media-left">
                 <p class="image is-64x64">
                     <img class="thumbnail" src="/images/thumbnail.svg" alt="Java内存泄漏排查">
                 </p>
@@ -327,7 +327,7 @@
             <div class="media-content">
                 <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-01-29T12:18:58.000Z">2019-01-29</time></div>
-                    <a href="/2019/01/29/Java内存泄漏排查-md/" class="has-link-black-ter is-size-6">Java内存泄漏排查</a>
+                    <a href="/2019/01/29/Java内存泄漏排查/" class="has-link-black-ter is-size-6">Java内存泄漏排查</a>
                     <p class="is-size-7 is-uppercase">
                         
                     </p>
